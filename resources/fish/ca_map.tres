@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="FishData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/fish_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "ca_map"
+display_name = "Cá Mập"
+description = "Sát thủ của biển sâu. Cực kỳ hung dữ khi bị cắn câu."
+display_icon = "🦈"
+rank = "A"
+weight_min = 40.0
+weight_max = 180.0
+gold_value = 500
+exp_value = 150
+is_boss = false
+boss_rage_cycles = 0
+bite_speed_multiplier = 1.35
+attracted_by_live_bait_rank = "B"

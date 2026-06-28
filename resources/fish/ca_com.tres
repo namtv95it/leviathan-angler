@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="FishData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/fish_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "ca_com"
+display_name = "Cá Cơm"
+description = "Loài cá nhỏ phổ biến nhất vùng ven bờ. Khi làm mồi sống sẽ gọi Cá Thu."
+display_icon = "🐟"
+rank = "C"
+weight_min = 0.05
+weight_max = 0.45
+gold_value = 10
+exp_value = 5
+is_boss = false
+boss_rage_cycles = 0
+bite_speed_multiplier = 1.0
+attracted_by_live_bait_rank = ""

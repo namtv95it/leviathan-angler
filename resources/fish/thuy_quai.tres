@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="FishData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/fish_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "thuy_quai"
+display_name = "Thủy Quái Cổ Đại"
+description = "Sinh vật từ thủa hồng hoang. Câu được con này là kỳ tích của thế giới."
+display_icon = "🦕"
+rank = "SS"
+weight_min = 800.0
+weight_max = 4500.0
+gold_value = 20000
+exp_value = 5000
+is_boss = true
+boss_rage_cycles = 3
+bite_speed_multiplier = 2.0
+attracted_by_live_bait_rank = "S"

@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="FishData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/fish_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "ca_vua"
+display_name = "Cá Vua Đại Dương"
+description = "Huyền thoại sống của vùng biển sâu. Cực kỳ hiếm và cực kỳ mạnh."
+display_icon = "👑"
+rank = "S"
+weight_min = 250.0
+weight_max = 750.0
+gold_value = 3000
+exp_value = 800
+is_boss = true
+boss_rage_cycles = 2
+bite_speed_multiplier = 1.6
+attracted_by_live_bait_rank = "A"
