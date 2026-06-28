@@ -11,7 +11,7 @@ config_version=5
 [application]
 
 config/name="leviathan-angler"
-run/main_scene="res://scenes/gameplay/fishing_phase1.tscn"
+run/main_scene="res://scenes/menus/main_menu.tscn"
 config/features=PackedStringArray("4.7", "Mobile")
 config/icon="res://icon.svg"
 
@@ -22,11 +22,14 @@ EventBus="*uid://dv3udj2ilrr1c"
 SaveManager="*uid://d07jrcv4ay366"
 AudioManager="*uid://6kw0ixgeo31h"
 FishDatabase="*uid://ir30jkbhbrvm"
+PlayerInventory="*res://scripts/systems/player_inventory.gd"
 
 [display]
 
+window/size/viewport_width=1920
+window/size/viewport_height=1080
 window/stretch/mode="canvas_items"
-window/stretch/aspect="expand"
+window/handheld/orientation=1
 
 [physics]
 

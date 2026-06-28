@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="RodData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/rod_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "rod_silver"
+display_name = "Cần Bạc"
+display_icon = "⚡"
+description = "Cần câu bằng sợi bạc. Linh hoạt hơn, may mắn tốt hơn. Mở khóa Lv.10."
+grade = "silver"
+gold_cost = 5000
+required_level = 10
+power = 35
+flexibility = 45
+luck = 35
+durability = 30

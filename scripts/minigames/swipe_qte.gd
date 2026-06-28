@@ -1,8 +1,8 @@
 ## scripts/minigames/swipe_qte.gd
-## Phase 3: Giằng Co — QTE Mũi tên
+## Phase 3: Giằng Co — QTE Mũi tên (Swipe Mechanic)
 ##
-## Hiển thị chuỗi mũi tên (3-7 tùy rank cá). Người chơi bấm đúng nút
-## hướng tương ứng trong thời gian quy định.
+## Hiển thị chuỗi mũi tên. Người chơi vuốt màn hình
+## theo hướng mũi tên tương ứng trong thời gian quy định.
 ##
 ## CÁCH DÙNG:
 ##   var qte := SwipeQTE.new()
@@ -17,8 +17,8 @@ extends CanvasLayer
 signal completed(success: bool)  ## true = hoàn thành tất cả mũi tên đúng
 
 # === HẰNG SỐ ===
-const SCREEN_W := 1080.0
-const SCREEN_H := 1920.0
+const SCREEN_W := 1920.0
+const SCREEN_H := 1080.0
 
 const DIRS := ["up", "down", "left", "right"]
 const ARROW_SYMBOLS := {
@@ -33,6 +33,7 @@ const ARROW_COLORS := {
 	"left":  Color(0.3, 0.8, 1.0),
 	"right": Color(0.3, 0.8, 1.0),
 }
+const SWIPE_DIST_MIN := 80.0  ## Khoảng cách vuốt tối thiểu
 
 # === TRẠNG THÁI ===
 var _sequence: Array[String] = []
@@ -42,19 +43,17 @@ var _time_left: float = 0.0
 var _active: bool = false
 var _total: int = 0
 
+var _is_dragging: bool = false
+var _drag_start_pos: Vector2 = Vector2.ZERO
+var _current_streak: int = 0
+
 # === NODES ===
 var _arrow_label: Label           ## Hiển thị mũi tên cần bấm (rất lớn)
 var _progress_label: Label        ## "Mũi tên 2 / 5"
 var _timer_bar: ColorRect         ## Thanh đếm giờ
 var _timer_bar_bg: ColorRect
 var _combo_label: Label           ## Streak đúng liên tiếp
-var _btn_up: Button
-var _btn_down: Button
-var _btn_left: Button
-var _btn_right: Button
 var _flash_overlay: ColorRect     ## Flash khi đúng/sai
-
-var _current_streak: int = 0
 
 
 func _ready() -> void:
@@ -64,13 +63,15 @@ func _ready() -> void:
 
 
 ## Kích hoạt QTE với số mũi tên và thời gian mỗi mũi
-func activate(arrow_count: int, time_per_arrow: float) -> void:
-	_total         = arrow_count
-	_time_per_arrow = time_per_arrow
-	_current_idx   = 0
+## time_bonus: từ RodData.get_flexibility_bonus(), thêm giây cho mỗi mũi tên
+func activate(arrow_count: int, time_per_arrow: float, time_bonus: float = 0.0) -> void:
+	_total          = arrow_count
+	_time_per_arrow = time_per_arrow + time_bonus
+	_current_idx    = 0
 	_current_streak = 0
-	_active        = true
-	visible        = true
+	_is_dragging    = false
+	_active         = true
+	visible         = true
 
 	# Sinh chuỗi mũi tên ngẫu nhiên
 	_sequence.clear()
@@ -108,8 +109,46 @@ func _process(delta: float) -> void:
 
 
 # =============================================
-# XỬ LÝ NÚT BẤM
+# XỬ LÝ NHẬN DIỆN VUỐT (SWIPE)
 # =============================================
+func _on_gui_input(event: InputEvent) -> void:
+	if not _active:
+		return
+
+	# Xử lý chuột
+	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
+		if event.pressed:
+			_is_dragging = true
+			_drag_start_pos = event.position
+		else:
+			if _is_dragging:
+				_process_swipe(event.position - _drag_start_pos)
+			_is_dragging = false
+			
+	# Xử lý cảm ứng
+	elif event is InputEventScreenTouch:
+		if event.pressed:
+			_is_dragging = true
+			_drag_start_pos = event.position
+		else:
+			if _is_dragging:
+				_process_swipe(event.position - _drag_start_pos)
+			_is_dragging = false
+
+
+func _process_swipe(vec: Vector2) -> void:
+	if vec.length() < SWIPE_DIST_MIN:
+		return  ## Vuốt quá ngắn, bỏ qua
+
+	var dir := ""
+	if absf(vec.x) > absf(vec.y):
+		dir = "right" if vec.x > 0 else "left"
+	else:
+		dir = "down" if vec.y > 0 else "up"
+	
+	_on_dir_pressed(dir)
+
+
 func _on_dir_pressed(dir: String) -> void:
 	if not _active:
 		return
@@ -167,24 +206,14 @@ func _show_current_arrow() -> void:
 	var dir := _sequence[_current_idx]
 	_arrow_label.text = ARROW_SYMBOLS.get(dir, "?")
 	_arrow_label.add_theme_color_override("font_color", ARROW_COLORS.get(dir, Color.WHITE))
+	
+	# Hiệu ứng nảy nhẹ khi chuyển mũi tên
+	var tw = create_tween()
+	_arrow_label.scale = Vector2(0.5, 0.5)
+	tw.tween_property(_arrow_label, "scale", Vector2(1.0, 1.0), 0.2).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
+	
 	_progress_label.text = "Mũi tên  %d / %d" % [_current_idx + 1, _total]
 	_time_left = _time_per_arrow
-
-	# Nhấp nháy mũi tên cần bấm trên D-pad
-	_highlight_dpad(dir)
-
-
-func _highlight_dpad(active_dir: String) -> void:
-	var btns := {"up": _btn_up, "down": _btn_down, "left": _btn_left, "right": _btn_right}
-	for d in btns:
-		var btn: Button = btns[d]
-		if btn:
-			if d == active_dir:
-				btn.modulate = Color(1.0, 1.0, 1.0, 1.0)
-				btn.add_theme_color_override("font_color", Color(0.0, 0.85, 1.0))
-			else:
-				btn.modulate = Color(0.5, 0.5, 0.5, 0.7)
-				btn.add_theme_color_override("font_color", Color(0.5, 0.5, 0.5))
 
 
 func _do_flash(color: Color) -> void:
@@ -212,6 +241,17 @@ func _build_ui() -> void:
 	overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
 	overlay.color = Color(0.0, 0.0, 0.08, 0.92)
 	root.add_child(overlay)
+	
+	# Background pattern trang trí
+	var bg_pattern := Label.new()
+	bg_pattern.text = "⟲  ⟳"
+	bg_pattern.position = Vector2((SCREEN_W-600)/2, (SCREEN_H-600)/2)
+	bg_pattern.size = Vector2(600, 600)
+	bg_pattern.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	bg_pattern.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	bg_pattern.add_theme_font_size_override("font_size", 400)
+	bg_pattern.modulate = Color(1, 1, 1, 0.03)
+	root.add_child(bg_pattern)
 
 	# Flash overlay (hiệu ứng đúng/sai)
 	_flash_overlay = ColorRect.new()
@@ -224,15 +264,18 @@ func _build_ui() -> void:
 	# Center container
 	var center := CenterContainer.new()
 	center.set_anchors_preset(Control.PRESET_FULL_RECT)
+	center.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	root.add_child(center)
 
 	var vbox := VBoxContainer.new()
 	vbox.add_theme_constant_override("separation", 24)
 	vbox.alignment = BoxContainer.ALIGNMENT_CENTER
+	vbox.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	center.add_child(vbox)
 
 	# Title
 	_add_label(vbox, "🎣  GIẰNG CO!", 72, Color(1.0, 0.85, 0.15))
+	_add_label(vbox, "👉 Vuốt màn hình theo hướng mũi tên! 👈", 40, Color(0.7, 1.0, 0.7))
 
 	# Progress
 	_progress_label = _add_label(vbox, "Mũi tên 1 / 5", 44, Color(0.8, 0.9, 1.0))
@@ -240,72 +283,54 @@ func _build_ui() -> void:
 	# Timer bar
 	var timer_host := Control.new()
 	timer_host.custom_minimum_size = Vector2(750, 28)
+	timer_host.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	vbox.add_child(timer_host)
 
 	_timer_bar_bg = ColorRect.new()
 	_timer_bar_bg.size     = Vector2(750, 22)
 	_timer_bar_bg.position = Vector2(0, 3)
 	_timer_bar_bg.color    = Color(0.15, 0.15, 0.15)
+	_timer_bar_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	timer_host.add_child(_timer_bar_bg)
 
 	_timer_bar = ColorRect.new()
 	_timer_bar.size     = Vector2(750, 22)
 	_timer_bar.position = Vector2(0, 3)
 	_timer_bar.color    = Color(0.1, 0.85, 0.4)
+	_timer_bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	timer_host.add_child(_timer_bar)
+	
+	# Khoảng cách
+	var spacer0 := Control.new()
+	spacer0.custom_minimum_size = Vector2(0, 20)
+	vbox.add_child(spacer0)
 
 	# Hiển thị mũi tên cần bấm (rất lớn)
 	_arrow_label = _add_label(vbox, "⬆", 220, Color(0.3, 0.8, 1.0))
+	_arrow_label.pivot_offset = Vector2(_arrow_label.size.x/2, _arrow_label.size.y/2)
+
+	# Spacer
+	var spacer1 := Control.new()
+	spacer1.custom_minimum_size = Vector2(0, 20)
+	vbox.add_child(spacer1)
 
 	# Combo label
 	_combo_label = _add_label(vbox, "", 40, Color(0.5, 0.5, 0.5))
-
-	# Spacer
-	var spacer := Control.new()
-	spacer.custom_minimum_size = Vector2(0, 20)
-	vbox.add_child(spacer)
-
-	# Hướng dẫn
-	_add_label(vbox, "Bấm nút khớp với mũi tên!", 36, Color(0.7, 0.7, 0.7))
-
-	# D-pad buttons
-	_build_dpad(vbox)
-
-
-func _build_dpad(parent: Node) -> void:
-	# Hàng trên: ↑
-	var row_top := HBoxContainer.new()
-	row_top.alignment = BoxContainer.ALIGNMENT_CENTER
-	parent.add_child(row_top)
-	_btn_up = _make_dir_btn("⬆", "up")
-	row_top.add_child(_btn_up)
-
-	# Hàng giữa: ← ↓ →
-	var row_mid := HBoxContainer.new()
-	row_mid.alignment = BoxContainer.ALIGNMENT_CENTER
-	row_mid.add_theme_constant_override("separation", 20)
-	parent.add_child(row_mid)
-	_btn_left  = _make_dir_btn("⬅", "left")
-	_btn_down  = _make_dir_btn("⬇", "down")
-	_btn_right = _make_dir_btn("➡", "right")
-	row_mid.add_child(_btn_left)
-	row_mid.add_child(_btn_down)
-	row_mid.add_child(_btn_right)
-
-
-func _make_dir_btn(icon: String, dir: String) -> Button:
-	var btn := Button.new()
-	btn.text = icon
-	btn.custom_minimum_size = Vector2(180, 180)
-	btn.add_theme_font_size_override("font_size", 100)
-	btn.pressed.connect(func(): _on_dir_pressed(dir))
-	return btn
+	
+	# --- Input Catcher ---
+	# Phủ toàn bộ màn hình để bắt thao tác vuốt
+	var input_catcher := ColorRect.new()
+	input_catcher.color = Color(1, 1, 1, 0)
+	input_catcher.set_anchors_preset(Control.PRESET_FULL_RECT)
+	input_catcher.gui_input.connect(_on_gui_input)
+	root.add_child(input_catcher)
 
 
 func _add_label(parent: Node, text: String, font_size: int, color: Color) -> Label:
 	var lbl := Label.new()
 	lbl.text = text
 	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	lbl.add_theme_font_size_override("font_size", font_size)
 	lbl.add_theme_color_override("font_color", color)
 	parent.add_child(lbl)

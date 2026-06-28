@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="RodData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/rod_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "rod_gold"
+display_name = "Cần Hoàng Kim"
+display_icon = "👑"
+description = "Cần câu huyền thoại bằng vàng nguyên chất. Mở khóa Lv.25. Ép cân tối đa, giảm boss rage."
+grade = "gold"
+gold_cost = 30000
+required_level = 25
+power = 75
+flexibility = 60
+luck = 70
+durability = 80

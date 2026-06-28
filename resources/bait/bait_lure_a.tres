@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="BaitData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/bait_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "bait_lure_a"
+display_name = "Mồi Elite"
+display_icon = "💎"
+description = "Mồi nhân tạo Elite. Câu được cá A và S. Con trỏ nhanh hơn đáng kể."
+tier = "A"
+gold_cost = 1500
+buy_quantity = 5
+is_live = false
+pointer_speed_bonus = 0.30
+zone_bonus = "yellow"
+is_consumable = true

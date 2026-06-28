@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="BaitData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/bait_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "bait_free"
+display_name = "Mồi Cơ Bản"
+display_icon = "🪱"
+description = "Mồi miễn phí, không hao tốn. Chỉ câu được cá loại C."
+tier = "free"
+gold_cost = 0
+buy_quantity = 0
+is_live = false
+pointer_speed_bonus = 0.0
+zone_bonus = ""
+is_consumable = false

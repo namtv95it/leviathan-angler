@@ -15,8 +15,8 @@ extends CanvasLayer
 signal closed()
 
 # === HẰNG SỐ ===
-const SCREEN_W := 1080.0
-const SCREEN_H := 1920.0
+const SCREEN_W := 1920.0
+const SCREEN_H := 1080.0
 
 const ZONE_LABELS := {
 	1.0: ["Thường",    Color(0.8, 0.8, 0.8)],
@@ -154,72 +154,79 @@ func _build_ui() -> void:
 
 	# Card
 	_card = PanelContainer.new()
-	_card.custom_minimum_size = Vector2(900, 0)
-	_card.pivot_offset = Vector2(450, 400)
+	_card.custom_minimum_size = Vector2(1200, 600)
+	_card.pivot_offset = Vector2(600, 300)
 	center.add_child(_card)
 
-	var card_vbox := VBoxContainer.new()
-	card_vbox.add_theme_constant_override("separation", 20)
-	_card.add_child(card_vbox)
-
+	var main_vbox := VBoxContainer.new()
+	main_vbox.add_theme_constant_override("separation", 24)
+	main_vbox.alignment = BoxContainer.ALIGNMENT_CENTER
+	_card.add_child(main_vbox)
+	
 	# Padding top
-	var pad_top := Control.new()
-	pad_top.custom_minimum_size = Vector2(0, 20)
-	card_vbox.add_child(pad_top)
+	var pt := Control.new()
+	pt.custom_minimum_size = Vector2(0, 10)
+	main_vbox.add_child(pt)
 
 	# Tiêu đề
-	_add_label(card_vbox, "🎉  CÂU ĐƯỢC!", 68, Color(1.0, 0.85, 0.15))
+	_add_label(main_vbox, "🎉 CÂU ĐƯỢC!", 64, Color(1.0, 0.85, 0.15))
 
-	# Divider
-	card_vbox.add_child(_make_divider())
+	var hbox := HBoxContainer.new()
+	hbox.add_theme_constant_override("separation", 80)
+	hbox.alignment = BoxContainer.ALIGNMENT_CENTER
+	main_vbox.add_child(hbox)
 
-	# Fish icon (rất to)
-	_fish_icon_lbl = _add_label(card_vbox, "🐟", 180, Color.WHITE)
+	# --- Cột trái: Cá ---
+	var left_vbox := VBoxContainer.new()
+	left_vbox.add_theme_constant_override("separation", 10)
+	left_vbox.alignment = BoxContainer.ALIGNMENT_CENTER
+	hbox.add_child(left_vbox)
 
-	# Rank badge
-	_rank_badge = _add_label(card_vbox, "[ Rank C ]", 44, Color.WHITE)
+	_fish_icon_lbl = _add_label(left_vbox, "🐟", 160, Color.WHITE)
+	_rank_badge = _add_label(left_vbox, "[ Rank C ]", 40, Color.WHITE)
+	_fish_name_lbl = _add_label(left_vbox, "Cá Cơm", 56, Color(0.9, 0.95, 1.0))
 
-	# Tên cá
-	_fish_name_lbl = _add_label(card_vbox, "Cá Cơm", 64, Color(0.9, 0.95, 1.0))
+	# --- Phân cách dọc ---
+	var v_div := ColorRect.new()
+	v_div.custom_minimum_size = Vector2(4, 300)
+	v_div.color = Color(1, 1, 1, 0.12)
+	hbox.add_child(v_div)
 
-	# Divider
-	card_vbox.add_child(_make_divider())
+	# --- Cột phải: Chỉ số ---
+	var right_vbox := VBoxContainer.new()
+	right_vbox.add_theme_constant_override("separation", 16)
+	right_vbox.alignment = BoxContainer.ALIGNMENT_CENTER
+	hbox.add_child(right_vbox)
 
-	# Cân nặng
-	_weight_lbl = _add_label(card_vbox, "⚖  0.30 kg", 56, Color(0.7, 0.9, 1.0))
+	_weight_lbl = _add_label(right_vbox, "⚖  0.30 kg", 50, Color(0.7, 0.9, 1.0))
+	_quality_lbl = _add_label(right_vbox, "✨ Phẩm chất: Thường", 38, Color(0.8, 0.8, 0.8))
+	
+	right_vbox.add_child(_make_divider(400))
+	
+	_add_label(right_vbox, "PHẦN THƯỞNG", 32, Color(0.6, 0.7, 0.8))
+	_gold_lbl = _add_label(right_vbox, "🪙  +10 Vàng", 48, Color(1.0, 0.85, 0.1))
+	_exp_lbl  = _add_label(right_vbox, "⭐  +5 EXP",  44, Color(0.6, 0.9, 1.0))
 
-	# Chất lượng
-	_quality_lbl = _add_label(card_vbox, "✨ Phẩm chất: Thường", 44, Color(0.8, 0.8, 0.8))
-
-	# Divider
-	card_vbox.add_child(_make_divider())
-
-	# Phần thưởng
-	_add_label(card_vbox, "PHẦN THƯỞNG", 36, Color(0.6, 0.7, 0.8))
-
-	_gold_lbl = _add_label(card_vbox, "🪙  +10 Vàng", 58, Color(1.0, 0.85, 0.1))
-	_exp_lbl  = _add_label(card_vbox, "⭐  +5 EXP",  52, Color(0.6, 0.9, 1.0))
-
-	# Divider
-	card_vbox.add_child(_make_divider())
-
-	# Padding giữa
-	var pad_mid := Control.new()
-	pad_mid.custom_minimum_size = Vector2(0, 10)
-	card_vbox.add_child(pad_mid)
+	# Spacer
+	var spacer := Control.new()
+	spacer.custom_minimum_size = Vector2(0, 10)
+	main_vbox.add_child(spacer)
+	
+	var btn_center := CenterContainer.new()
+	main_vbox.add_child(btn_center)
 
 	# Close button
 	_close_btn = Button.new()
 	_close_btn.text = "TIẾP TỤC →"
-	_close_btn.custom_minimum_size = Vector2(700, 120)
-	_close_btn.add_theme_font_size_override("font_size", 60)
+	_close_btn.custom_minimum_size = Vector2(500, 100)
+	_close_btn.add_theme_font_size_override("font_size", 50)
 	_close_btn.pressed.connect(_on_close)
-	card_vbox.add_child(_close_btn)
-
+	btn_center.add_child(_close_btn)
+	
 	# Padding bottom
-	var pad_bot := Control.new()
-	pad_bot.custom_minimum_size = Vector2(0, 20)
-	card_vbox.add_child(pad_bot)
+	var pb := Control.new()
+	pb.custom_minimum_size = Vector2(0, 10)
+	main_vbox.add_child(pb)
 
 
 func _add_label(parent: Node, text: String, font_size: int, color: Color) -> Label:
@@ -232,8 +239,8 @@ func _add_label(parent: Node, text: String, font_size: int, color: Color) -> Lab
 	return lbl
 
 
-func _make_divider() -> ColorRect:
+func _make_divider(w: float = 800) -> ColorRect:
 	var div := ColorRect.new()
-	div.custom_minimum_size = Vector2(800, 2)
+	div.custom_minimum_size = Vector2(w, 2)
 	div.color = Color(1, 1, 1, 0.12)
 	return div

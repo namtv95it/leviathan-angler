@@ -1,7 +1,7 @@
 ## scripts/minigames/timing_bar.gd
 ## Phase 2: Timing Bar Mini-game
 ##
-## Con trỏ di chuyển qua lại trên thanh 3 vùng màu.
+## Con trỏ di di chuyển qua lại trên thanh 3 vùng màu.
 ## Người chơi bấm đúng vùng để quyết định chất lượng cá câu được.
 ##
 ## Vùng XANH  (lớn,  ~63%): Câu cá ngay, chất lượng Thường (x1.0)
@@ -45,8 +45,8 @@ const BASE_SPEED := 0.60   ## 0.6 * 900px = 540px/s
 const MAX_TRAVERSALS := 4
 
 ## Screen size reference
-const SCREEN_W := 1080.0
-const SCREEN_H := 1920.0
+const SCREEN_W := 1920.0
+const SCREEN_H := 1080.0
 
 # === TRẠNG THÁI ===
 var _t: float = 0.0               ## Vị trí con trỏ, 0.0 → 1.0

@@ -9,18 +9,18 @@ script = ExtResource("1")
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_right = 1080.0
-offset_bottom = 1920.0
+offset_right = 1920.0
+offset_bottom = 1080.0
 color = Color(0.05, 0.12, 0.25, 1)
 
 [node name="WaterLine" type="ColorRect" parent="." unique_id=1177608044]
-offset_top = 960.0
-offset_right = 1080.0
-offset_bottom = 1920.0
+offset_top = 600.0
+offset_right = 1920.0
+offset_bottom = 1080.0
 color = Color(0.04, 0.18, 0.38, 1)
 
 [node name="FishingRod" type="Node2D" parent="." unique_id=23465411]
-position = Vector2(800, 900)
+position = Vector2(1400, 500)
 
 [node name="RodSprite" type="ColorRect" parent="FishingRod" unique_id=578336633]
 offset_left = -8.0

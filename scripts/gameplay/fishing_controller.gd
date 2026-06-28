@@ -45,6 +45,8 @@ var _quality_multiplier: float = 1.0
 var _mash_fill: float = 0.0
 ## Số lần boss rage còn lại
 var _boss_rage_remaining: int = 0
+## HUD overlay
+var _hud: HUD = null
 
 # =============================================
 # THAM CHIẾU NODE (tất cả đã có trong scene)
@@ -68,6 +70,9 @@ func _ready() -> void:
 	_connect_buttons()
 	_select_bait_free()
 	_set_state(Phase1State.IDLE)
+	## Thêm HUD vào scene
+	_hud = HUD.new()
+	add_child(_hud)
 	print("[FishingController] Sẵn sàng.")
 
 
@@ -94,27 +99,27 @@ func _connect_buttons() -> void:
 # CHỌN MỒI
 # =============================================
 func _select_bait_free() -> void:
-	_selected_bait = {
-		"id": "bait_free",
-		"name": "Mồi Cơ Bản",
-		"tier": "free",
-		"pointer_speed_bonus": 0.0,
-		"is_live": false,
-		"zone_bonus": "",
-	}
+	var path := "res://resources/bait/bait_free.tres"
+	if ResourceLoader.exists(path):
+		_selected_bait = (load(path) as BaitData).to_dict()
+	else:
+		_selected_bait = {
+			"id": "bait_free", "name": "Mồi Cơ Bản", "tier": "free",
+			"pointer_speed_bonus": 0.0, "is_live": false, "zone_bonus": "",
+		}
 	_highlight_bait_button(btn_bait_free)
 	EventBus.bait_selected.emit(_selected_bait)
 
 
 func _select_bait_c() -> void:
-	_selected_bait = {
-		"id": "bait_lure_c",
-		"name": "Mồi Thường",
-		"tier": "C",
-		"pointer_speed_bonus": 0.0,
-		"is_live": false,
-		"zone_bonus": "green",
-	}
+	var path := "res://resources/bait/bait_lure_c.tres"
+	if ResourceLoader.exists(path):
+		_selected_bait = (load(path) as BaitData).to_dict()
+	else:
+		_selected_bait = {
+			"id": "bait_lure_c", "name": "Mồi Thường", "tier": "C",
+			"pointer_speed_bonus": 0.0, "is_live": false, "zone_bonus": "green",
+		}
 	_highlight_bait_button(btn_bait_c)
 	EventBus.bait_selected.emit(_selected_bait)
 
@@ -186,12 +191,14 @@ func _spawn_fish_shadow() -> void:
 		_reset_to_idle()
 		return
 
-	## Khởi tạo boss rage counter
+	## Tính boss rage dựa trên cá + giảm từ Durability cần
 	_boss_rage_remaining = 0
+	var rod: RodData = PlayerInventory.get_equipped_rod()
 	if fish_data is FishData and fish_data.is_boss:
-		_boss_rage_remaining = fish_data.boss_rage_cycles
+		_boss_rage_remaining = maxi(1, fish_data.boss_rage_cycles - (rod.get_durability_reduction() if rod else 0))
 	elif fish_data is Dictionary and fish_data.get("is_boss", false):
-		_boss_rage_remaining = fish_data.get("boss_rage_cycles", 2)
+		var base_cycles: int = fish_data.get("boss_rage_cycles", 2)
+		_boss_rage_remaining = maxi(1, base_cycles - (rod.get_durability_reduction() if rod else 0))
 
 	## Tạo bóng cá
 	var shadow = FishShadowScene.instantiate()
@@ -227,7 +234,7 @@ func _start_phase2() -> void:
 	if fish_data is FishData:
 		speed_bonus += (fish_data.bite_speed_multiplier - 1.0)
 	elif fish_data is Dictionary:
-		speed_bonus += (fish_data.get("bite_speed_multiplier", 1.0) - 1.0)
+		speed_bonus += (float(fish_data.get("bite_speed_multiplier", 1.0)) - 1.0)
 
 	_timing_bar = TimingBar.new()
 	add_child(_timing_bar)
@@ -283,7 +290,6 @@ func _start_phase3() -> void:
 		arrow_count    = fish_data.get_qte_arrow_count()
 		time_per_arrow = fish_data.get_qte_time_per_arrow()
 	elif fish_data is Dictionary:
-		## Fallback cho placeholder dict
 		match fish_data.get("rank", "C"):
 			"C":  arrow_count = 3; time_per_arrow = 2.5
 			"B":  arrow_count = 4; time_per_arrow = 2.2
@@ -291,13 +297,17 @@ func _start_phase3() -> void:
 			"S":  arrow_count = 6; time_per_arrow = 1.5
 			"SS": arrow_count = 7; time_per_arrow = 1.2
 
+	## Áp dụng Flexibility bonus từ cần câu
+	var rod: RodData = PlayerInventory.get_equipped_rod()
+	var flex_bonus: float = rod.get_flexibility_bonus() if rod else 0.0
+
 	GameManager.change_state(GameManager.GameState.FISHING_QTE)
 	EventBus.qte_started.emit([])
 
 	_swipe_qte = SwipeQTE.new()
 	add_child(_swipe_qte)
 	_swipe_qte.completed.connect(_on_qte_completed)
-	_swipe_qte.activate(arrow_count, time_per_arrow)
+	_swipe_qte.activate(arrow_count, time_per_arrow, flex_bonus)
 
 
 func _on_qte_completed(success: bool) -> void:
@@ -322,10 +332,14 @@ func _start_phase4() -> void:
 	GameManager.change_state(GameManager.GameState.FISHING_MASH)
 	EventBus.mash_started.emit(4.0)
 
+	## Áp dụng Power bonus từ cần câu
+	var rod: RodData = PlayerInventory.get_equipped_rod()
+	var power_bonus: float = rod.get_power_bonus() if rod else 0.0
+
 	_mash_btn = MashButton.new()
 	add_child(_mash_btn)
 	_mash_btn.completed.connect(_on_mash_completed)
-	_mash_btn.activate(4.0)
+	_mash_btn.activate(4.0, power_bonus)
 
 
 func _on_mash_completed(fill: float) -> void:

@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="BaitData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/bait_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "bait_lure_c"
+display_name = "Mồi Thường"
+display_icon = "🐛"
+description = "Mồi nhân tạo chất lượng thường. Câu được cá C và B."
+tier = "C"
+gold_cost = 50
+buy_quantity = 10
+is_live = false
+pointer_speed_bonus = 0.0
+zone_bonus = "green"
+is_consumable = true

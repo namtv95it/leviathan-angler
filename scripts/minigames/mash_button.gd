@@ -1,5 +1,5 @@
 ## scripts/minigames/mash_button.gd
-## Phase 4: Bứt Tốc Ép Cân — Button Mash
+## Phase 4: Kéo Cá Lên — Button Mash
 ##
 ## Người chơi spam nút PULL trong thời gian giới hạn.
 ## Thanh năng lượng càng đầy → cá câu được càng nặng.
@@ -7,7 +7,7 @@
 ## CÁCH DÙNG:
 ##   var mash := MashButton.new()
 ##   add_child(mash)
-##   mash.completed.connect(_on_mash_done)  ## nhận mash_fill: float [0.0→1.0]
+##   mash.completed.connect(_on_mash_done)
 ##   mash.activate(4.0)
 
 class_name MashButton
@@ -17,8 +17,8 @@ extends CanvasLayer
 signal completed(mash_fill: float)  ## 0.0 → 1.0
 
 # === HẰNG SỐ ===
-const SCREEN_W := 1080.0
-const SCREEN_H := 1920.0
+const SCREEN_W := 1920.0
+const SCREEN_H := 1080.0
 
 ## Mỗi lần bấm, năng lượng tăng bao nhiêu %
 const FILL_PER_TAP := 0.055   ## 18-19 lần bấm để đầy 100%
@@ -31,6 +31,7 @@ var _timer: float = 0.0        ## Thời gian còn lại
 var _duration: float = 4.0
 var _active: bool = false
 var _tap_count: int = 0
+var _fill_per_tap: float = FILL_PER_TAP
 
 # === NODES ===
 var _energy_fill: ColorRect
@@ -49,8 +50,10 @@ func _ready() -> void:
 
 
 ## Kích hoạt với thời gian duration (giây)
-func activate(duration: float = 4.0) -> void:
-	_duration  = duration
+## power_bonus: từ RodData.get_power_bonus(), tăng fill mỗi lần bấm
+func activate(duration: float = 4.0, power_bonus: float = 0.0) -> void:
+	_duration     = duration
+	_fill_per_tap = FILL_PER_TAP * (1.0 + power_bonus)
 	_timer     = duration
 	_fill      = 0.0
 	_tap_count = 0
@@ -86,7 +89,7 @@ func _on_pull_pressed() -> void:
 		return
 
 	_tap_count += 1
-	_fill = minf(1.0, _fill + FILL_PER_TAP)
+	_fill = minf(1.0, _fill + _fill_per_tap)
 
 	# Hiệu ứng rung nhẹ nút
 	var tween := create_tween()
@@ -141,7 +144,7 @@ func _update_visuals() -> void:
 
 	# Tap count
 	if _tap_count_label:
-		_tap_count_label.text = "× %d lần bấm" % _tap_count
+		_tap_count_label.text = "× %d lần kéo" % _tap_count
 
 
 # =============================================
@@ -159,7 +162,7 @@ func _build_ui() -> void:
 	overlay.color = Color(0.0, 0.02, 0.10, 0.92)
 	root.add_child(overlay)
 
-	# Center container
+	# Center container cho text
 	var center := CenterContainer.new()
 	center.set_anchors_preset(Control.PRESET_FULL_RECT)
 	root.add_child(center)
@@ -171,7 +174,7 @@ func _build_ui() -> void:
 
 	# Title
 	_add_label(vbox, "💪  KÉO CÁ LÊN!", 76, Color(1.0, 0.85, 0.1))
-	_add_label(vbox, "Spam nút PULL thật nhanh!", 40, Color(0.8, 0.9, 1.0))
+	_add_label(vbox, "Nhấn liên tục nút PULL thật nhanh!", 40, Color(0.8, 0.9, 1.0))
 
 	# Timer
 	_timer_label = _add_label(vbox, "4.0s", 58, Color(0.6, 0.9, 1.0))
@@ -211,14 +214,14 @@ func _build_ui() -> void:
 	_fill_label = _add_label(vbox, "0%", 70, Color(1.0, 1.0, 1.0))
 
 	# Tap count
-	_tap_count_label = _add_label(vbox, "× 0 lần bấm", 38, Color(0.7, 0.8, 0.9))
+	_tap_count_label = _add_label(vbox, "× 0 lần kéo", 38, Color(0.7, 0.8, 0.9))
 
 	# Result label
 	_result_label = _add_label(vbox, "", 44, Color(0.5, 0.5, 0.5))
 
 	# Spacer
 	var spacer := Control.new()
-	spacer.custom_minimum_size = Vector2(0, 10)
+	spacer.custom_minimum_size = Vector2(0, 20)
 	vbox.add_child(spacer)
 
 	# PULL button (rất to)

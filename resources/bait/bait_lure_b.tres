@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="BaitData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/bait_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "bait_lure_b"
+display_name = "Mồi Cao Cấp"
+display_icon = "✨"
+description = "Mồi nhân tạo cao cấp. Câu được cá B và A. Con trỏ Timing Bar nhanh hơn nhẹ."
+tier = "B"
+gold_cost = 300
+buy_quantity = 10
+is_live = false
+pointer_speed_bonus = 0.15
+zone_bonus = "yellow"
+is_consumable = true

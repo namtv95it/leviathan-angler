@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="RodData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/rod_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "rod_basic"
+display_name = "Cần Tre Thường"
+display_icon = "🎣"
+description = "Cần câu tre cơ bản. Tốt cho người mới bắt đầu."
+grade = "basic"
+gold_cost = 0
+required_level = 1
+power = 10
+flexibility = 10
+luck = 10
+durability = 10
