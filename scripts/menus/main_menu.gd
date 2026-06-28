@@ -41,8 +41,8 @@ func _build_ui() -> void:
 
 	## Lớp gradient dưới (sâu hơn)
 	var bg_deep := ColorRect.new()
-	bg_deep.size     = Vector2(SCREEN_W, SCREEN_H * 0.4)
-	bg_deep.position = Vector2(0, SCREEN_H * 0.6)
+	bg_deep.set_anchors_preset(Control.PRESET_FULL_RECT)
+	bg_deep.anchor_top = 0.6
 	bg_deep.color    = Color(0.01, 0.03, 0.12)
 	bg_deep.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(bg_deep)
@@ -50,8 +50,9 @@ func _build_ui() -> void:
 	## Các dải sáng mô phỏng ánh sáng xuyên nước
 	for i in range(6):
 		var shimmer := ColorRect.new()
-		shimmer.size     = Vector2(SCREEN_W, SCREEN_H / 10.0)
-		shimmer.position = Vector2(0, i * SCREEN_H / 6.0)
+		shimmer.set_anchors_preset(Control.PRESET_TOP_WIDE)
+		shimmer.offset_top = i * SCREEN_H / 6.0
+		shimmer.offset_bottom = i * SCREEN_H / 6.0 + SCREEN_H / 10.0
 		var alpha := 0.04 + (1.0 - float(i) / 6.0) * 0.06
 		shimmer.color = Color(0.1, 0.3, 0.7, alpha)
 		shimmer.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -72,8 +73,9 @@ func _build_ui() -> void:
 
 	## Đường phân cách nước (mặt biển)
 	var water_line := ColorRect.new()
-	water_line.size     = Vector2(SCREEN_W, 2)
-	water_line.position = Vector2(0, 600)
+	water_line.set_anchors_preset(Control.PRESET_TOP_WIDE)
+	water_line.offset_top = 600
+	water_line.offset_bottom = 602
 	water_line.color    = Color(0.4, 0.7, 1.0, 0.25)
 	water_line.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(water_line)
@@ -83,8 +85,9 @@ func _build_ui() -> void:
 	var title_glow := Label.new()
 	title_glow.text = "🎣 LEVIATHAN ANGLER"
 	title_glow.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title_glow.size     = Vector2(SCREEN_W + 20, 150)
-	title_glow.position = Vector2(-10, 116)
+	title_glow.set_anchors_preset(Control.PRESET_TOP_WIDE)
+	title_glow.offset_top = 116
+	title_glow.offset_bottom = 266
 	title_glow.add_theme_font_size_override("font_size", 88)
 	title_glow.add_theme_color_override("font_color", Color(0.2, 0.5, 1.0, 0.35))
 	title_glow.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -93,8 +96,9 @@ func _build_ui() -> void:
 	var title := Label.new()
 	title.text = "🎣 LEVIATHAN ANGLER"
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title.size     = Vector2(SCREEN_W, 150)
-	title.position = Vector2(0, 120)
+	title.set_anchors_preset(Control.PRESET_TOP_WIDE)
+	title.offset_top = 120
+	title.offset_bottom = 270
 	title.add_theme_font_size_override("font_size", 88)
 	title.add_theme_color_override("font_color", Color(1.0, 0.88, 0.18))
 	title.name = "Title"
@@ -105,8 +109,9 @@ func _build_ui() -> void:
 	var subtitle := Label.new()
 	subtitle.text = "⚓  Biển Sâu Dậy Sóng  ⚓"
 	subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	subtitle.size     = Vector2(SCREEN_W, 70)
-	subtitle.position = Vector2(0, 260)
+	subtitle.set_anchors_preset(Control.PRESET_TOP_WIDE)
+	subtitle.offset_top = 260
+	subtitle.offset_bottom = 330
 	subtitle.add_theme_font_size_override("font_size", 48)
 	subtitle.add_theme_color_override("font_color", Color(0.45, 0.78, 1.0))
 	subtitle.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -114,8 +119,11 @@ func _build_ui() -> void:
 
 	## Divider
 	var divider := ColorRect.new()
-	divider.size     = Vector2(560, 3)
-	divider.position = Vector2((SCREEN_W-560)/2, 360)
+	divider.set_anchors_preset(Control.PRESET_CENTER_TOP)
+	divider.offset_left = -280
+	divider.offset_right = 280
+	divider.offset_top = 360
+	divider.offset_bottom = 363
 	divider.color    = Color(0.3, 0.6, 1.0, 0.55)
 	divider.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(divider)
@@ -124,8 +132,9 @@ func _build_ui() -> void:
 	var stats := Label.new()
 	stats.text = _get_stats_text()
 	stats.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	stats.size     = Vector2(SCREEN_W, 60)
-	stats.position = Vector2(0, 390)
+	stats.set_anchors_preset(Control.PRESET_TOP_WIDE)
+	stats.offset_top = 390
+	stats.offset_bottom = 450
 	stats.add_theme_font_size_override("font_size", 40)
 	stats.add_theme_color_override("font_color", Color(0.65, 0.82, 1.0))
 	stats.name = "StatsLabel"
@@ -136,8 +145,9 @@ func _build_ui() -> void:
 	var fish_count := Label.new()
 	fish_count.text = "🐟 %d loài cá đã câu" % PlayerInventory.get_fish_count()
 	fish_count.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	fish_count.size     = Vector2(SCREEN_W, 50)
-	fish_count.position = Vector2(0, 450)
+	fish_count.set_anchors_preset(Control.PRESET_TOP_WIDE)
+	fish_count.offset_top = 450
+	fish_count.offset_bottom = 500
 	fish_count.add_theme_font_size_override("font_size", 34)
 	fish_count.add_theme_color_override("font_color", Color(0.5, 0.7, 1.0))
 	fish_count.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -146,8 +156,11 @@ func _build_ui() -> void:
 	## --- NÚT CHÍNH ---
 	_play_btn = Button.new()
 	_play_btn.text = "▶  CHƠI NGAY"
-	_play_btn.custom_minimum_size = Vector2(720, 170)
-	_play_btn.position = Vector2((SCREEN_W-720)/2, 600)
+	_play_btn.set_anchors_preset(Control.PRESET_CENTER_TOP)
+	_play_btn.offset_left = -360
+	_play_btn.offset_right = 360
+	_play_btn.offset_top = 600
+	_play_btn.offset_bottom = 770
 	_play_btn.add_theme_font_size_override("font_size", 80)
 	_play_btn.pivot_offset = Vector2(360, 85)
 	_play_btn.name = "PlayBtn"
@@ -158,8 +171,11 @@ func _build_ui() -> void:
 
 	## --- NÚT PHỤ ---
 	var row := HBoxContainer.new()
-	row.position = Vector2((SCREEN_W-820)/2, 820)
-	row.custom_minimum_size = Vector2(820, 100)
+	row.set_anchors_preset(Control.PRESET_CENTER_TOP)
+	row.offset_left = -410
+	row.offset_right = 410
+	row.offset_top = 820
+	row.offset_bottom = 920
 	row.alignment = BoxContainer.ALIGNMENT_CENTER
 	row.add_theme_constant_override("separation", 24)
 	add_child(row)
@@ -182,8 +198,9 @@ func _build_ui() -> void:
 	var ver := Label.new()
 	ver.text = "v0.2 — Sprint 2 Build"
 	ver.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	ver.size     = Vector2(SCREEN_W, 50)
-	ver.position = Vector2(0, SCREEN_H - 75)
+	ver.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
+	ver.offset_top = -75
+	ver.offset_bottom = -25
 	ver.add_theme_font_size_override("font_size", 28)
 	ver.add_theme_color_override("font_color", Color(0.35, 0.45, 0.65))
 	ver.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -194,11 +211,12 @@ func _build_ui() -> void:
 # HIỆU ỨNG & ANIMATION
 # =============================================
 func _animate_decorations(delta: float) -> void:
+	var current_width = get_viewport_rect().size.x
 	for i in _fish_decors.size():
 		var d: ColorRect = _fish_decors[i]
 		d.position.x += (60.0 + i * 18.0) * delta
 		d.position.y += sin(_time * 1.5 + i * 1.2) * 22.0 * delta
-		if d.position.x > SCREEN_W + 260:
+		if d.position.x > current_width + 260:
 			d.position.x = -280.0
 			d.position.y = 300.0 + i * 150.0 + randf_range(-50, 50)
 

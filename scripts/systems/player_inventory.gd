@@ -29,7 +29,7 @@ var bait_stock: Dictionary = {
 }
 
 ## ID các cần câu đang sở hữu
-var owned_rod_ids: Array[String] = ["rod_basic"]
+var owned_rod_ids: Array[String] = ["rod_basic", "rod_silver", "rod_gold"]
 
 
 func _ready() -> void:

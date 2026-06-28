@@ -16,6 +16,7 @@ signal change_rod_pressed()
 signal change_bait_pressed()
 signal open_bait_selection()
 signal open_shop()
+signal go_home()
 
 const SCREEN_W := 1920.0
 const SCREEN_H := 1080.0
@@ -31,6 +32,7 @@ var _profile_name: Label
 var _gold_label:   Label
 var _gem_label:    Label
 var _btn_shop:     Button
+var _btn_home:     Button
 
 # --- Bottom Left (Equip) ---
 var _btn_rod:  Button
@@ -61,8 +63,7 @@ func _ready() -> void:
 
 func _build_ui() -> void:
 	var root := Control.new()
-	root.offset_right  = SCREEN_W
-	root.offset_bottom = SCREEN_H
+	root.set_anchors_preset(Control.PRESET_FULL_RECT)
 	root.mouse_filter  = Control.MOUSE_FILTER_IGNORE
 	add_child(root)
 
@@ -126,7 +127,8 @@ func _build_ui() -> void:
 
 	# --- TOP RIGHT: CURRENCY ---
 	var top_right := Control.new()
-	top_right.position = Vector2(1880, 40)
+	top_right.set_anchors_preset(Control.PRESET_TOP_RIGHT)
+	top_right.position = Vector2(-40, 40)
 	top_right.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	root.add_child(top_right)
 	
@@ -151,24 +153,27 @@ func _build_ui() -> void:
 	_btn_shop = Button.new()
 	_btn_shop.position = Vector2(-750, 0)
 	_btn_shop.size = Vector2(140, 50)
-	_btn_shop.text = "🛒 SHOP"
+	_btn_shop.text = "🛍 SHOP"
 	_btn_shop.add_theme_font_size_override("font_size", 28)
 	_btn_shop.pressed.connect(func(): open_shop.emit())
 	top_right.add_child(_btn_shop)
 
+	# Nút quay về trang chủ
+	_btn_home = Button.new()
+	_btn_home.position = Vector2(-920, 0)
+	_btn_home.size = Vector2(160, 50)
+	_btn_home.text = "← Menu"
+	_btn_home.add_theme_font_size_override("font_size", 28)
+	_btn_home.modulate = Color(1.0, 0.75, 0.75)
+	_btn_home.pressed.connect(func(): go_home.emit())
+	top_right.add_child(_btn_home)
 
-	# Đường viền dưới top bar
-	var border := ColorRect.new()
-	border.size     = Vector2(SCREEN_W, 2)
-	border.position = Vector2(0, 102)
-	border.color    = Color(0.3, 0.6, 1.0, 0.35)
-	border.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	root.add_child(border)
+
 	
 	# --- Bảng thông báo (Top Center) ---
 	_status_label = Label.new()
+	_status_label.set_anchors_preset(Control.PRESET_TOP_WIDE)
 	_status_label.position = Vector2(0, 160)
-	_status_label.size = Vector2(SCREEN_W, 60)
 	_status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_status_label.add_theme_font_size_override("font_size", 48)
 	_status_label.add_theme_color_override("font_color", Color(1.0, 1.0, 1.0))
@@ -179,7 +184,8 @@ func _build_ui() -> void:
 
 	# --- BOTTOM LEFT: EQUIPS ---
 	var bot_left := Control.new()
-	bot_left.position = Vector2(100, SCREEN_H - 100)
+	bot_left.set_anchors_preset(Control.PRESET_BOTTOM_LEFT)
+	bot_left.position = Vector2(100, -100)
 	bot_left.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	root.add_child(bot_left)
 	
@@ -222,7 +228,8 @@ func _build_ui() -> void:
 
 	# --- BOTTOM RIGHT: BIG ACTION BUTTON ---
 	var bot_right := Control.new()
-	bot_right.position = Vector2(SCREEN_W - 280, SCREEN_H - 280)
+	bot_right.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
+	bot_right.position = Vector2(-280, -280)
 	bot_right.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	root.add_child(bot_right)
 	

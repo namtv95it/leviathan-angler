@@ -137,8 +137,7 @@ func _on_close() -> void:
 # =============================================
 func _build_ui() -> void:
 	var root := Control.new()
-	root.offset_right  = SCREEN_W
-	root.offset_bottom = SCREEN_H
+	root.set_anchors_preset(Control.PRESET_FULL_RECT)
 	add_child(root)
 
 	# Overlay tối

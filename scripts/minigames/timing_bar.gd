@@ -148,15 +148,17 @@ func _update_rounds_label() -> void:
 # =============================================
 func _build_ui() -> void:
 	var root := Control.new()
-	root.offset_right  = SCREEN_W
-	root.offset_bottom = SCREEN_H
+	root.set_anchors_preset(Control.PRESET_FULL_RECT)
 	root.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(root)
 
 	# --- VBox Container (nằm ở top center) ---
 	var vbox := VBoxContainer.new()
-	vbox.position = Vector2((SCREEN_W - BAR_W) / 2, 160)
-	vbox.size = Vector2(BAR_W, 200)
+	vbox.set_anchors_preset(Control.PRESET_CENTER_TOP)
+	vbox.offset_left = -BAR_W / 2
+	vbox.offset_right = BAR_W / 2
+	vbox.offset_top = 160
+	vbox.offset_bottom = 360
 	vbox.add_theme_constant_override("separation", 10)
 	vbox.alignment = BoxContainer.ALIGNMENT_CENTER
 	vbox.mouse_filter = Control.MOUSE_FILTER_IGNORE

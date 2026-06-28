@@ -60,9 +60,11 @@ var _hud: HUD = null
 @onready var shadow_layer  := $FishShadowLayer
 @onready var ui_layer      := $UI
 
+
 const FishShadowScene = preload("res://scenes/gameplay/fish_shadow.tscn")
 const ShopScreenScene = preload("res://scenes/ui/shop_screen.tscn")
 const BaitSelectionScreenScene = preload("res://scenes/ui/bait_selection_screen.tscn")
+const RodSelectionScreenScene = preload("res://scenes/ui/rod_selection_screen.tscn")
 
 func _ready() -> void:
 	## Ẩn UI cũ (để đề phòng chưa xóa)
@@ -70,6 +72,7 @@ func _ready() -> void:
 		ui_layer.visible = false
 
 	_select_bait_free()
+	_update_rod_visual()
 	
 	## Khởi tạo các điểm cho dây cước (20 đoạn)
 	fishing_line.clear_points()
@@ -84,9 +87,20 @@ func _ready() -> void:
 	_hud.open_bait_selection.connect(_on_hud_open_bait_selection)
 	_hud.change_rod_pressed.connect(_on_hud_change_rod)
 	_hud.open_shop.connect(_on_hud_open_shop)
+	_hud.go_home.connect(_on_hud_go_home)
 	
 	_set_state(Phase1State.IDLE)
 	print("[FishingController] Sẵn sàng.")
+
+	get_viewport().size_changed.connect(_on_viewport_size_changed)
+	_on_viewport_size_changed()
+
+
+func _on_viewport_size_changed() -> void:
+	var rod_node = get_node_or_null("FishingRod")
+	if rod_node:
+		var vp_size = get_viewport_rect().size
+		rod_node.position = Vector2(400, vp_size.y - 180)
 
 
 func _process(delta: float) -> void:
@@ -165,7 +179,12 @@ func _on_hud_change_rod() -> void:
 	if _state != Phase1State.IDLE:
 		_hud.show_status("Không thể đổi cần lúc này!", 2.0, Color.RED)
 		return
-	_hud.show_status("Chức năng đang phát triển...", 2.0, Color.YELLOW)
+	var rod_screen = RodSelectionScreenScene.instantiate()
+	rod_screen.rod_chosen.connect(_on_rod_chosen)
+	add_child(rod_screen)
+
+func _on_rod_chosen(_rod_id: String) -> void:
+	_update_rod_visual()
 
 
 func _on_hud_open_shop() -> void:
@@ -174,6 +193,14 @@ func _on_hud_open_shop() -> void:
 		return
 	var shop = ShopScreenScene.instantiate()
 	add_child(shop)
+
+func _on_hud_go_home() -> void:
+	SaveManager.save_game()
+	var tw := create_tween()
+	tw.tween_property(get_tree().get_root(), "modulate:a", 0.0, 0.25)
+	tw.tween_callback(func():
+		get_tree().change_scene_to_file("res://scenes/menus/main_menu.tscn")
+	)
 
 
 # =============================================
@@ -188,7 +215,6 @@ func _select_bait_free() -> void:
 			"id": "bait_free", "name": "Mồi Cơ Bản", "tier": "free",
 			"pointer_speed_bonus": 0.0, "is_live": false, "zone_bonus": "",
 		}
-	_update_float_visual()
 	EventBus.bait_selected.emit(_selected_bait)
 
 
@@ -201,7 +227,6 @@ func _select_bait_c() -> void:
 			"id": "bait_lure_c", "name": "Mồi Thường", "tier": "C",
 			"pointer_speed_bonus": 0.0, "is_live": false, "zone_bonus": "green",
 		}
-	_update_float_visual()
 	EventBus.bait_selected.emit(_selected_bait)
 
 
@@ -219,13 +244,39 @@ func _select_bait_live() -> void:
 
 func _update_float_visual() -> void:
 	if float_label == null: return
-	var b_id = _selected_bait.get("id", "")
-	if b_id == "bait_lure_c":
-		float_label.text = "🪱"
-	elif b_id == "bait_live":
-		float_label.text = "🐟"
-	else:
-		float_label.text = "🍞"
+	var current_rod = PlayerInventory.get_equipped_rod()
+	var rod_id = current_rod.id if current_rod else "rod_basic"
+	match rod_id:
+		"rod_basic":
+			float_label.text = "🪵" # Phao gỗ thường
+		"rod_silver":
+			float_label.text = "⚪" # Phao bạc sphàt sáng
+		"rod_gold":
+			float_label.text = "🟡" # Phao vàng rực rỡ
+		"rod_legendary":
+			float_label.text = "🟣" # Phao tím huyền thoại
+		_:
+			float_label.text = "🪵"
+
+func _update_rod_visual() -> void:
+	var current_rod = PlayerInventory.get_equipped_rod()
+	if current_rod == null: return
+
+	var sprite = rod_visual.get_node_or_null("RodSprite")
+	if not sprite: return
+
+	sprite.visible = true
+
+	var tex_map := {
+		"rod_basic":  "res://assets/art/basic_wooden_rod.png",
+		"rod_silver": "res://assets/art/starlight_weaver_rod.png",
+		"rod_gold":   "res://assets/art/void_eye_rod.png",
+	}
+	var tex_path: String = tex_map.get(current_rod.id, "res://assets/art/basic_wooden_rod.png")
+	if ResourceLoader.exists(tex_path):
+		sprite.texture = load(tex_path)
+	sprite.modulate = Color(1.0, 1.0, 1.0)
+	_update_float_visual()
 
 
 # =============================================
@@ -239,26 +290,48 @@ func _on_cast_pressed() -> void:
 		_hud.show_status("Hãy chọn mồi trước!")
 		return
 
-	AudioManager.play_sfx("cast_line")
 	_set_state(Phase1State.CASTING)
 
-	## Animation quăng cần: phao bay ra
-	var tween := create_tween()
-	tween.set_parallel(true)
-	tween.tween_property(rod_visual, "rotation", 0.87, 0.4)\
-		 .set_ease(Tween.EASE_OUT)\
-		 .set_trans(Tween.TRANS_QUAD)
-	
-	# float_node sẽ bay từ đỉnh cần câu hiện tại
-	var start_pos = rod_visual.transform * tip_marker.position
-	# Quăng xa hơn về hướng mặt trời
-	var target_pos = Vector2(1100, -280)
-	tween.tween_property(float_node, "position", target_pos, 0.4)\
-		 .from(start_pos)\
-		 .set_ease(Tween.EASE_OUT)\
-		 .set_trans(Tween.TRANS_QUAD)
-	tween.chain().tween_callback(_on_cast_complete)
+	## === ANIMATION VUNG CẦN 3 PHA ===
+	var rod_sprite = rod_visual.get_node_or_null("RodSprite")
 
+	# --- PHA 1: Kéo cần ra sau (0.25s) ---
+	var tw1 := create_tween()
+	tw1.set_parallel(true)
+	tw1.tween_property(rod_visual, "rotation", -0.3, 0.25)\
+		.set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_QUAD)
+	tw1.tween_property(float_node, "position", rod_visual.transform * tip_marker.position, 0.25)\
+		.from_current()
+
+	await tw1.finished
+
+	# --- PHA 2: Đầu cần uốn cong dưới lực (0.2s) ---
+	var tw2 := create_tween()
+	tw2.set_parallel(true)
+	if rod_sprite:
+		tw2.tween_property(rod_sprite, "scale:x", rod_sprite.scale.x * 0.75, 0.2)\
+			.set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_QUAD)
+	tw2.tween_property(rod_visual, "rotation", 1.1, 0.2)\
+		.set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_QUAD)
+
+	await tw2.finished
+
+	AudioManager.play_sfx("cast_line")
+
+	# --- PHA 3: Cần bật lại + mồi bay ra (0.35s) ---
+	var start_pos = rod_visual.transform * tip_marker.position
+	var target_pos = Vector2(1100, -280)
+
+	var tw3 := create_tween()
+	tw3.set_parallel(true)
+	tw3.tween_property(rod_visual, "rotation", 0.87, 0.35)\
+		.set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
+	if rod_sprite:
+		tw3.tween_property(rod_sprite, "scale:x", rod_sprite.scale.x / 0.75, 0.35)\
+			.set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
+	tw3.tween_property(float_node, "position", target_pos, 0.4)\
+		.from(start_pos).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_QUAD)
+	tw3.chain().tween_callback(_on_cast_complete)
 
 func _on_cast_complete() -> void:
 	_set_state(Phase1State.WAITING)

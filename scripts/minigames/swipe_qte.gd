@@ -232,8 +232,7 @@ func _do_flash(color: Color) -> void:
 func _build_ui() -> void:
 	# Root full screen
 	var root := Control.new()
-	root.offset_right  = SCREEN_W
-	root.offset_bottom = SCREEN_H
+	root.set_anchors_preset(Control.PRESET_FULL_RECT)
 	root.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(root)
 

@@ -133,14 +133,16 @@ func _update_visuals() -> void:
 # =============================================
 func _build_ui() -> void:
 	var root := Control.new()
-	root.offset_right  = SCREEN_W
-	root.offset_bottom = SCREEN_H
+	root.set_anchors_preset(Control.PRESET_FULL_RECT)
 	root.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(root)
 
 	var vbox := VBoxContainer.new()
-	vbox.position = Vector2((SCREEN_W - 840) / 2, SCREEN_H - 320)
-	vbox.size = Vector2(840, 250)
+	vbox.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
+	vbox.offset_left = -420
+	vbox.offset_right = 420
+	vbox.offset_top = -320
+	vbox.offset_bottom = -70
 	vbox.add_theme_constant_override("separation", 16)
 	vbox.alignment = BoxContainer.ALIGNMENT_CENTER
 	vbox.mouse_filter = Control.MOUSE_FILTER_IGNORE
