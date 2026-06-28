@@ -1,26 +1,47 @@
 ## scripts/ui/hud.gd
 ## HUD hiển thị trong khi chơi:
-##   - Level + thanh EXP (trái)
-##   - Gold (phải)
-##   - Mồi đang dùng (phải dưới)
+##   - Bố cục mới chuẩn Mobile Game Câu Cá (Landscape)
 ##
 ## CÁCH DÙNG:
 ##   var hud := HUD.new()
-##   add_child(hud)   ## Tự build UI, tự connect signals
+##   add_child(hud)
+##   hud.action_pressed.connect(_on_action_pressed)
 
 class_name HUD
 extends CanvasLayer
 
+# === SIGNALS ===
+signal action_pressed()
+signal change_rod_pressed()
+signal change_bait_pressed()
+
 const SCREEN_W := 1920.0
 const SCREEN_H := 1080.0
 
+# --- Top Left (Profile) ---
 var _level_label:  Label
 var _exp_bar_bg:   ColorRect
 var _exp_bar_fill: ColorRect
 var _exp_label:    Label
+var _profile_name: Label
+
+# --- Top Right (Currency) ---
 var _gold_label:   Label
-var _bait_label:   Label
-var _fish_label:   Label   ## Số cá đã câu
+var _gem_label:    Label
+
+# --- Bottom Left (Equip) ---
+var _btn_rod:  Button
+var _btn_bait: Button
+var _rod_label: Label
+var _bait_label: Label
+
+# --- Bottom Right (Action) ---
+var _btn_action: Button
+var _btn_action_bg: ColorRect
+
+
+# --- Status Message ---
+var _status_label: Label
 
 
 func _ready() -> void:
@@ -38,16 +59,92 @@ func _ready() -> void:
 func _build_ui() -> void:
 	var root := Control.new()
 	root.offset_right  = SCREEN_W
-	root.offset_bottom = 110.0
+	root.offset_bottom = SCREEN_H
 	root.mouse_filter  = Control.MOUSE_FILTER_IGNORE
 	add_child(root)
 
-	# --- Nền mờ phía trên ---
-	var top_bg := ColorRect.new()
-	top_bg.size     = Vector2(SCREEN_W, 104)
-	top_bg.color    = Color(0.0, 0.02, 0.10, 0.78)
-	top_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	root.add_child(top_bg)
+	# --- TOP LEFT: PROFILE ---
+	var top_left := Control.new()
+	top_left.position = Vector2(40, 40)
+	top_left.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	root.add_child(top_left)
+
+	# Avatar (Placeholder)
+	var avatar := ColorRect.new()
+	avatar.size = Vector2(140, 140)
+	avatar.color = Color(0.1, 0.15, 0.3)
+	top_left.add_child(avatar)
+	var avatar_icon := Label.new()
+	avatar_icon.text = "🧑"
+	avatar_icon.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	avatar_icon.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	avatar_icon.size = avatar.size
+	avatar_icon.add_theme_font_size_override("font_size", 80)
+	avatar.add_child(avatar_icon)
+	
+	# Name
+	_profile_name = Label.new()
+	_profile_name.text = "Thợ Câu Leviathan"
+	_profile_name.position = Vector2(160, 0)
+	_profile_name.add_theme_font_size_override("font_size", 36)
+	_profile_name.add_theme_color_override("font_color", Color(1.0, 0.9, 0.6))
+	top_left.add_child(_profile_name)
+
+	# Level
+	_level_label = Label.new()
+	_level_label.position = Vector2(160, 46)
+	_level_label.text = "Cấp 1"
+	_level_label.add_theme_font_size_override("font_size", 32)
+	_level_label.add_theme_color_override("font_color", Color(0.8, 0.8, 0.8))
+	top_left.add_child(_level_label)
+
+	# EXP Bar
+	_exp_bar_bg = ColorRect.new()
+	_exp_bar_bg.position = Vector2(160, 96)
+	_exp_bar_bg.size     = Vector2(320, 24)
+	_exp_bar_bg.color    = Color(0.1, 0.1, 0.12)
+	top_left.add_child(_exp_bar_bg)
+
+	_exp_bar_fill = ColorRect.new()
+	_exp_bar_fill.position = Vector2(160, 96)
+	_exp_bar_fill.size     = Vector2(0, 24)
+	_exp_bar_fill.color    = Color(0.5, 0.2, 0.8) # Tím neon giống ảnh mẫu
+	top_left.add_child(_exp_bar_fill)
+
+	_exp_label = Label.new()
+	_exp_label.position = Vector2(160, 96)
+	_exp_label.size     = Vector2(320, 24)
+	_exp_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_exp_label.vertical_alignment   = VERTICAL_ALIGNMENT_CENTER
+	_exp_label.text     = "0 / 100"
+	_exp_label.add_theme_font_size_override("font_size", 18)
+	top_left.add_child(_exp_label)
+
+
+	# --- TOP RIGHT: CURRENCY ---
+	var top_right := Control.new()
+	top_right.position = Vector2(1880, 40)
+	top_right.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	root.add_child(top_right)
+	
+	_gold_label = Label.new()
+	_gold_label.position = Vector2(-600, 0)
+	_gold_label.size     = Vector2(280, 50)
+	_gold_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	_gold_label.text     = "🪙 0"
+	_gold_label.add_theme_font_size_override("font_size", 36)
+	_gold_label.add_theme_color_override("font_color", Color(1.0, 0.85, 0.1))
+	top_right.add_child(_gold_label)
+	
+	_gem_label = Label.new()
+	_gem_label.position = Vector2(-280, 0)
+	_gem_label.size     = Vector2(280, 50)
+	_gem_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	_gem_label.text     = "💎 0"
+	_gem_label.add_theme_font_size_override("font_size", 36)
+	_gem_label.add_theme_color_override("font_color", Color(0.4, 0.8, 1.0))
+	top_right.add_child(_gem_label)
+
 
 	# Đường viền dưới top bar
 	var border := ColorRect.new()
@@ -56,90 +153,139 @@ func _build_ui() -> void:
 	border.color    = Color(0.3, 0.6, 1.0, 0.35)
 	border.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	root.add_child(border)
+	
+	# --- Bảng thông báo (Top Center) ---
+	_status_label = Label.new()
+	_status_label.position = Vector2(0, 160)
+	_status_label.size = Vector2(SCREEN_W, 60)
+	_status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_status_label.add_theme_font_size_override("font_size", 48)
+	_status_label.add_theme_color_override("font_color", Color(1.0, 1.0, 1.0))
+	_status_label.add_theme_color_override("font_outline_color", Color(0,0,0))
+	_status_label.add_theme_constant_override("outline_size", 4)
+	_status_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	root.add_child(_status_label)
 
-	# --- Level (trái trên) ---
-	_level_label = Label.new()
-	_level_label.position = Vector2(18, 8)
-	_level_label.size     = Vector2(160, 50)
-	_level_label.text     = "Lv.1"
-	_level_label.add_theme_font_size_override("font_size", 44)
-	_level_label.add_theme_color_override("font_color", Color(1.0, 0.85, 0.1))
-	_level_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	root.add_child(_level_label)
+	# --- BOTTOM LEFT: EQUIPS ---
+	var bot_left := Control.new()
+	bot_left.position = Vector2(100, SCREEN_H - 100)
+	bot_left.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	root.add_child(bot_left)
+	
+	# Đổi cần câu
+	_btn_rod = Button.new()
+	_btn_rod.position = Vector2(0, -260)
+	_btn_rod.size = Vector2(120, 120)
+	_btn_rod.pivot_offset = Vector2(60, 60)
+	_btn_rod.text = "🎣"
+	_btn_rod.add_theme_font_size_override("font_size", 60)
+	_btn_rod.pressed.connect(func(): change_rod_pressed.emit())
+	bot_left.add_child(_btn_rod)
+	
+	var lbl_rod := Label.new()
+	lbl_rod.position = Vector2(-60, -130)
+	lbl_rod.size = Vector2(240, 30)
+	lbl_rod.text = "Đổi cần câu"
+	lbl_rod.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	lbl_rod.add_theme_font_size_override("font_size", 24)
+	bot_left.add_child(lbl_rod)
 
-	# --- Thanh EXP (trái dưới) ---
-	_exp_bar_bg = ColorRect.new()
-	_exp_bar_bg.position = Vector2(18, 62)
-	_exp_bar_bg.size     = Vector2(520, 22)
-	_exp_bar_bg.color    = Color(0.1, 0.1, 0.12)
-	_exp_bar_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	root.add_child(_exp_bar_bg)
-
-	_exp_bar_fill = ColorRect.new()
-	_exp_bar_fill.position = Vector2(18, 62)
-	_exp_bar_fill.size     = Vector2(0, 22)
-	_exp_bar_fill.color    = Color(0.3, 0.6, 1.0)
-	_exp_bar_fill.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	root.add_child(_exp_bar_fill)
-
-	_exp_label = Label.new()
-	_exp_label.position = Vector2(18, 62)
-	_exp_label.size     = Vector2(520, 22)
-	_exp_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_exp_label.vertical_alignment   = VERTICAL_ALIGNMENT_CENTER
-	_exp_label.text     = "0 / 100 EXP"
-	_exp_label.add_theme_font_size_override("font_size", 18)
-	_exp_label.add_theme_color_override("font_color", Color(0.85, 0.92, 1.0))
-	_exp_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	root.add_child(_exp_label)
-
-	# --- Gold (phải trên) ---
-	_gold_label = Label.new()
-	_gold_label.position = Vector2(1400, 8)
-	_gold_label.size     = Vector2(500, 50)
-	_gold_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	_gold_label.text     = "🪙 500"
-	_gold_label.add_theme_font_size_override("font_size", 44)
-	_gold_label.add_theme_color_override("font_color", Color(1.0, 0.85, 0.1))
-	_gold_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	root.add_child(_gold_label)
-
-	# --- Mồi + số cá (phải dưới) ---
+	# Đổi mồi câu
+	_btn_bait = Button.new()
+	_btn_bait.position = Vector2(0, -100)
+	_btn_bait.size = Vector2(120, 120)
+	_btn_bait.pivot_offset = Vector2(60, 60)
+	_btn_bait.text = "🪱"
+	_btn_bait.add_theme_font_size_override("font_size", 60)
+	_btn_bait.pressed.connect(func(): change_bait_pressed.emit())
+	bot_left.add_child(_btn_bait)
+	
 	_bait_label = Label.new()
-	_bait_label.position = Vector2(1400, 62)
-	_bait_label.size     = Vector2(360, 22)
-	_bait_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	_bait_label.text     = "🪱 Mồi Cơ Bản"
-	_bait_label.add_theme_font_size_override("font_size", 22)
-	_bait_label.add_theme_color_override("font_color", Color(0.65, 0.9, 0.65))
-	_bait_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	root.add_child(_bait_label)
+	_bait_label.position = Vector2(-60, 30)
+	_bait_label.size = Vector2(240, 30)
+	_bait_label.text = "Đổi mồi câu"
+	_bait_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_bait_label.add_theme_font_size_override("font_size", 24)
+	bot_left.add_child(_bait_label)
 
-	_fish_label = Label.new()
-	_fish_label.position = Vector2(1770, 62)
-	_fish_label.size     = Vector2(130, 22)
-	_fish_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	_fish_label.text     = "🐟 0"
-	_fish_label.add_theme_font_size_override("font_size", 22)
-	_fish_label.add_theme_color_override("font_color", Color(0.6, 0.8, 1.0))
-	_fish_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	root.add_child(_fish_label)
+
+	# --- BOTTOM RIGHT: BIG ACTION BUTTON ---
+	var bot_right := Control.new()
+	bot_right.position = Vector2(SCREEN_W - 240, SCREEN_H - 240)
+	bot_right.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	root.add_child(bot_right)
+	
+	# Background Glow
+	_btn_action_bg = ColorRect.new()
+	_btn_action_bg.position = Vector2(-150, -150)
+	_btn_action_bg.size = Vector2(300, 300)
+	_btn_action_bg.color = Color(0.6, 0.1, 1.0, 0.4) # Tím/Xanh glow
+	# Trong Godot 4, nếu muốn nút hình tròn có thể dùng StyleBoxFlat hoặc Texture, tạm thời ta dùng hiệu ứng modulate nhấp nháy.
+	bot_right.add_child(_btn_action_bg)
+	
+	# The real button
+	_btn_action = Button.new()
+	_btn_action.position = Vector2(-120, -120)
+	_btn_action.size = Vector2(240, 240)
+	_btn_action.pivot_offset = Vector2(120, 120)
+	_btn_action.text = "THẢ / KÉO"
+	_btn_action.add_theme_font_size_override("font_size", 40)
+	_btn_action.pressed.connect(func(): 
+		_play_button_anim()
+		action_pressed.emit()
+	)
+	bot_right.add_child(_btn_action)
 
 
 # =============================================
-# CẬP NHẬT UI
+# API HỖ TRỢ GAMEPLAY
+# =============================================
+
+func set_action_text(text: String, glow_color: Color = Color(0.6, 0.1, 1.0, 0.4)) -> void:
+	if _btn_action:
+		_btn_action.text = text
+	if _btn_action_bg:
+		_btn_action_bg.color = glow_color
+
+func set_action_visible(is_visible: bool) -> void:
+	if _btn_action:
+		_btn_action.visible = is_visible
+	if _btn_action_bg:
+		_btn_action_bg.visible = is_visible
+
+func show_status(text: String, duration: float = 2.0, color: Color = Color.WHITE) -> void:
+	if _status_label:
+		_status_label.text = text
+		_status_label.add_theme_color_override("font_color", color)
+		_status_label.modulate.a = 1.0
+		if duration > 0:
+			var tw = create_tween()
+			tw.tween_interval(duration)
+			tw.tween_property(_status_label, "modulate:a", 0.0, 0.3)
+
+func _play_button_anim() -> void:
+	var tw = create_tween()
+	_btn_action.scale = Vector2(0.85, 0.85)
+	tw.tween_property(_btn_action, "scale", Vector2(1.0, 1.0), 0.1).set_ease(Tween.EASE_OUT)
+
+
+# =============================================
+# CẬP NHẬT UI NỘI BỘ
 # =============================================
 
 func _refresh_all() -> void:
 	_update_gold(GameManager.get_currency("gold"))
+	_update_gem(GameManager.get_currency("gem"))
 	_update_exp_bar()
-	if _fish_label:
-		_fish_label.text = "🐟 %d" % PlayerInventory.get_fish_count()
 
 
 func _update_gold(amount: int) -> void:
 	if _gold_label:
 		_gold_label.text = "🪙 %s" % _fmt(amount)
+
+func _update_gem(amount: int) -> void:
+	if _gem_label:
+		_gem_label.text = "💎 %s" % _fmt(amount)
 
 
 func _update_exp_bar() -> void:
@@ -148,14 +294,14 @@ func _update_exp_bar() -> void:
 	var level:    int = GameManager.player_data.get("level", 1)
 
 	if _level_label:
-		_level_label.text = "Lv.%d" % level
+		_level_label.text = "Cấp %d" % level
 
 	if _exp_bar_bg and _exp_bar_fill:
 		var ratio := clampf(float(exp) / float(maxi(exp_next, 1)), 0.0, 1.0)
 		_exp_bar_fill.size.x = _exp_bar_bg.size.x * ratio
 
 	if _exp_label:
-		_exp_label.text = "%s / %s EXP" % [_fmt(exp), _fmt(exp_next)]
+		_exp_label.text = "%s / %s" % [_fmt(exp), _fmt(exp_next)]
 
 
 func _fmt(n: int) -> String:
@@ -173,6 +319,8 @@ func _fmt(n: int) -> String:
 func _on_currency_changed(type: String, amount: int) -> void:
 	if type == "gold":
 		_update_gold(amount)
+	elif type == "gem":
+		_update_gem(amount)
 
 
 func _on_exp_gained(_amount: int) -> void:
@@ -181,34 +329,34 @@ func _on_exp_gained(_amount: int) -> void:
 
 func _on_level_up(new_level: int) -> void:
 	_update_exp_bar()
-	## Hiệu ứng level up — flash label
 	if _level_label:
 		_level_label.add_theme_color_override("font_color", Color(1.0, 1.0, 0.3))
 		var tween := create_tween()
-		tween.tween_property(_level_label, "scale", Vector2(1.4, 1.4), 0.15)\
-			.set_ease(Tween.EASE_OUT)
-		tween.tween_property(_level_label, "scale", Vector2(1.0, 1.0), 0.2)\
-			.set_ease(Tween.EASE_IN)
+		tween.tween_property(_level_label, "scale", Vector2(1.4, 1.4), 0.15).set_ease(Tween.EASE_OUT)
+		tween.tween_property(_level_label, "scale", Vector2(1.0, 1.0), 0.2).set_ease(Tween.EASE_IN)
 		tween.tween_callback(func():
-			_level_label.add_theme_color_override("font_color", Color(1.0, 0.85, 0.1))
+			_level_label.add_theme_color_override("font_color", Color(0.8, 0.8, 0.8))
 		)
-	print("[HUD] Level Up! Lv.%d" % new_level)
 
 
 func _on_bait_selected(bait_data) -> void:
 	if not _bait_label:
 		return
+	var qty: int = 0
+	var b_name: String = "Mồi"
 	if bait_data is Dictionary:
-		var name_str: String = str(bait_data.get("name", "Mồi"))
-		var qty: int = PlayerInventory.get_bait_count(str(bait_data.get("id", "")))
-		var qty_str := " (∞)" if qty == -1 else " (%d)" % qty
-		_bait_label.text = "🪱 %s%s" % [name_str, qty_str]
+		qty = PlayerInventory.get_bait_count(str(bait_data.get("id", "")))
+		b_name = bait_data.get("name", "Mồi")
 	elif bait_data is BaitData:
-		var qty: int = PlayerInventory.get_bait_count(bait_data.id)
-		var qty_str := " (∞)" if qty == -1 else " (%d)" % qty
-		_bait_label.text = "%s %s%s" % [bait_data.display_icon, bait_data.display_name, qty_str]
+		qty = PlayerInventory.get_bait_count(bait_data.id)
+		b_name = bait_data.name
+	
+	var qty_str := " (∞)" if qty <= 0 else " (%d)" % qty
+	if b_name == "Mồi Cơ Bản":
+		qty_str = " (∞)"
+	_bait_label.text = "%s\n%s" % [b_name, qty_str]
 
 
 func _on_fish_caught(_fish_data) -> void:
-	if _fish_label:
-		_fish_label.text = "🐟 %d" % PlayerInventory.get_fish_count()
+	# Cập nhật số cá hiển thị nếu cần (đã bỏ ra khỏi top bar cho gọn)
+	pass

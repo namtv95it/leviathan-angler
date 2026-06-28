@@ -116,6 +116,7 @@ func _get_eligible_ranks(bait_tier: String) -> Array:
 		"B":    return ["B", "A"]
 		"A":    return ["A", "S"]
 		"S":    return ["S", "SS"]
+		"live": return ["A", "S", "SS"]
 		_:      return ["C"]
 
 

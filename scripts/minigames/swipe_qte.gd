@@ -234,24 +234,8 @@ func _build_ui() -> void:
 	var root := Control.new()
 	root.offset_right  = SCREEN_W
 	root.offset_bottom = SCREEN_H
+	root.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(root)
-
-	# Overlay
-	var overlay := ColorRect.new()
-	overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
-	overlay.color = Color(0.0, 0.0, 0.08, 0.92)
-	root.add_child(overlay)
-	
-	# Background pattern trang trí
-	var bg_pattern := Label.new()
-	bg_pattern.text = "⟲  ⟳"
-	bg_pattern.position = Vector2((SCREEN_W-600)/2, (SCREEN_H-600)/2)
-	bg_pattern.size = Vector2(600, 600)
-	bg_pattern.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	bg_pattern.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	bg_pattern.add_theme_font_size_override("font_size", 400)
-	bg_pattern.modulate = Color(1, 1, 1, 0.03)
-	root.add_child(bg_pattern)
 
 	# Flash overlay (hiệu ứng đúng/sai)
 	_flash_overlay = ColorRect.new()

@@ -7,6 +7,7 @@
 ##   Phase 3: QTE Swipe (vuốt mũi tên)
 ##   Phase 4: Button Mash (spam PULL)
 ##   Result:  Hiển thị kết quả + phần thưởng
+## Mọi tín hiệu UI được xử lý qua HUD (HUD.action_pressed).
 
 extends Node2D
 
@@ -55,28 +56,33 @@ var _hud: HUD = null
 @onready var fishing_line  := $FishingRod/FishingLine
 @onready var shadow_layer  := $FishShadowLayer
 @onready var ui_layer      := $UI
-@onready var status_label  := $UI/StatusLabel
-@onready var btn_cast      := $UI/BtnCastRetrieve
-@onready var btn_early     := $UI/BtnRetrieveEarly
-@onready var btn_bait_free := $UI/BaitPanel/BaitVBox/BaitHBox/BtnBaitFree
-@onready var btn_bait_c    := $UI/BaitPanel/BaitVBox/BaitHBox/BtnBaitC
-@onready var btn_bait_live := $UI/BaitPanel/BaitVBox/BaitHBox/BtnBaitLive
-@onready var bait_panel    := $UI/BaitPanel
 
 const FishShadowScene = preload("res://scenes/gameplay/fish_shadow.tscn")
 
 
 func _ready() -> void:
-	_connect_buttons()
+	## Ẩn UI cũ (để đề phòng chưa xóa)
+	if ui_layer:
+		ui_layer.visible = false
+
 	_select_bait_free()
-	_set_state(Phase1State.IDLE)
+	
 	## Thêm HUD vào scene
 	_hud = HUD.new()
 	add_child(_hud)
+	
+	_hud.action_pressed.connect(_on_hud_action_pressed)
+	_hud.change_bait_pressed.connect(_on_hud_change_bait)
+	_hud.change_rod_pressed.connect(_on_hud_change_rod)
+	
+	_set_state(Phase1State.IDLE)
 	print("[FishingController] Sẵn sàng.")
 
 
 func _process(delta: float) -> void:
+	if is_instance_valid(fishing_line) and is_instance_valid(float_node):
+		fishing_line.set_point_position(1, float_node.position)
+
 	match _state:
 		Phase1State.WAITING:
 			_process_waiting(delta)
@@ -85,14 +91,45 @@ func _process(delta: float) -> void:
 
 
 # =============================================
-# KẾT NỐI NÚT BẤM
+# NHẬN LỆNH TỪ HUD
 # =============================================
-func _connect_buttons() -> void:
-	btn_cast.pressed.connect(_on_cast_pressed)
-	btn_early.pressed.connect(_on_retrieve_early_pressed)
-	btn_bait_free.pressed.connect(_select_bait_free)
-	btn_bait_c.pressed.connect(_select_bait_c)
-	btn_bait_live.pressed.connect(_select_bait_live)
+func _on_hud_action_pressed() -> void:
+	# Phân phối tín hiệu tới phase tương ứng
+	match _state:
+		Phase1State.IDLE:
+			_on_cast_pressed()
+		Phase1State.WAITING, Phase1State.SHADOW_COMING:
+			_on_retrieve_early_pressed()
+		Phase1State.BITE_WINDOW:
+			if is_instance_valid(_timing_bar) and _timing_bar.has_method("trigger_action"):
+				_timing_bar.trigger_action()
+
+	# Nếu đang ở Phase 4 (GameManager state là FISHING_MASH)
+	if GameManager.current_state == GameManager.GameState.FISHING_MASH:
+		if is_instance_valid(_mash_btn) and _mash_btn.has_method("trigger_action"):
+			_mash_btn.trigger_action()
+
+
+func _on_hud_change_bait() -> void:
+	if _state != Phase1State.IDLE:
+		_hud.show_status("Không thể đổi mồi lúc này!", 2.0, Color.RED)
+		return
+		
+	# Giả lập chức năng đổi mồi xoay vòng
+	var current_id = _selected_bait.get("id", "bait_free")
+	if current_id == "bait_free":
+		_select_bait_c()
+	elif current_id == "bait_lure_c":
+		_select_bait_live()
+	else:
+		_select_bait_free()
+
+
+func _on_hud_change_rod() -> void:
+	if _state != Phase1State.IDLE:
+		_hud.show_status("Không thể đổi cần lúc này!", 2.0, Color.RED)
+		return
+	_hud.show_status("Chức năng đang phát triển...", 2.0, Color.YELLOW)
 
 
 # =============================================
@@ -107,7 +144,6 @@ func _select_bait_free() -> void:
 			"id": "bait_free", "name": "Mồi Cơ Bản", "tier": "free",
 			"pointer_speed_bonus": 0.0, "is_live": false, "zone_bonus": "",
 		}
-	_highlight_bait_button(btn_bait_free)
 	EventBus.bait_selected.emit(_selected_bait)
 
 
@@ -120,7 +156,6 @@ func _select_bait_c() -> void:
 			"id": "bait_lure_c", "name": "Mồi Thường", "tier": "C",
 			"pointer_speed_bonus": 0.0, "is_live": false, "zone_bonus": "green",
 		}
-	_highlight_bait_button(btn_bait_c)
 	EventBus.bait_selected.emit(_selected_bait)
 
 
@@ -133,13 +168,7 @@ func _select_bait_live() -> void:
 		"is_live": true,
 		"zone_bonus": "",
 	}
-	_highlight_bait_button(btn_bait_live)
 	EventBus.bait_selected.emit(_selected_bait)
-
-
-func _highlight_bait_button(active_btn: Button) -> void:
-	for btn in [btn_bait_free, btn_bait_c, btn_bait_live]:
-		btn.modulate = Color.WHITE if btn == active_btn else Color(0.6, 0.6, 0.6, 1)
 
 
 # =============================================
@@ -150,7 +179,7 @@ func _on_cast_pressed() -> void:
 		return
 
 	if _selected_bait.is_empty():
-		status_label.text = "Hãy chọn mồi trước!"
+		_hud.show_status("Hãy chọn mồi trước!")
 		return
 
 	AudioManager.play_sfx("cast_line")
@@ -158,8 +187,8 @@ func _on_cast_pressed() -> void:
 
 	## Animation quăng cần: phao bay ra
 	var tween := create_tween()
-	tween.tween_property(float_node, "position", Vector2(-300, 100), 0.4)\
-		 .from(Vector2(0, 0))\
+	tween.tween_property(float_node, "position", Vector2(1050, -430), 0.4)\
+		 .from(Vector2(689, -578))\
 		 .set_ease(Tween.EASE_OUT)\
 		 .set_trans(Tween.TRANS_QUAD)
 	tween.tween_callback(_on_cast_complete)
@@ -178,7 +207,7 @@ func _process_waiting(delta: float) -> void:
 	_wait_timer += delta
 
 	## Hiệu ứng phao nhấp nhô
-	float_node.position.y = 100 + sin(_wait_timer * 2.0) * 5.0
+	float_node.position.y = -430 + sin(_wait_timer * 2.0) * 5.0
 
 	if _wait_timer >= _wait_duration:
 		_spawn_fish_shadow()
@@ -203,7 +232,7 @@ func _spawn_fish_shadow() -> void:
 	## Tạo bóng cá
 	var shadow = FishShadowScene.instantiate()
 	shadow_layer.add_child(shadow)
-	shadow.setup(fish_data, _selected_bait)
+	shadow.setup(fish_data, _selected_bait, float_node.global_position)
 	shadow.reached_float.connect(_on_shadow_reached_float)
 	_current_shadow = shadow
 
@@ -255,17 +284,17 @@ func _on_timing_zone(zone: String) -> void:
 			## Câu cá ngay, chất lượng Thường
 			_quality_multiplier = 1.0
 			_mash_fill          = 0.55   ## Cân trung bình, không qua Phase 3+4
-			status_label.text   = "✓ Vùng Xanh — Câu được cá!"
+			_hud.show_status("✓ Vùng Xanh — Câu được cá!", 2.0, Color.GREEN)
 			_show_result()
 		"yellow":
 			## Kích hoạt Phase 3+4, chất lượng Tốt
 			_quality_multiplier = 1.5
-			status_label.text   = "⭐ Vùng Vàng — Giằng co nào!"
+			_hud.show_status("⭐ Vùng Vàng — Giằng co nào!", 2.0, Color.YELLOW)
 			_start_phase3()
 		"red":
 			## Kích hoạt Phase 3+4, chất lượng Hoàn Hảo
 			_quality_multiplier = 2.0
-			status_label.text   = "🔥 PERFECT! Vùng Đỏ — HIẾM!"
+			_hud.show_status("🔥 PERFECT! Vùng Đỏ — HIẾM!", 2.0, Color.RED)
 			_start_phase3()
 
 
@@ -273,7 +302,7 @@ func _on_timing_time_up() -> void:
 	_cleanup_node(_timing_bar)
 	_timing_bar = null
 	AudioManager.play_sfx("fish_escaped")
-	status_label.text = "Cá sổng! Bấm chậm quá..."
+	_hud.show_status("Cá sổng! Kéo chậm quá...", 2.0, Color.GRAY)
 	EventBus.fish_escaped.emit()
 	_reset_to_idle()
 
@@ -282,6 +311,8 @@ func _on_timing_time_up() -> void:
 # PHASE 3: QTE SWIPE MŨI TÊN
 # =============================================
 func _start_phase3() -> void:
+	_hud.set_action_visible(false) # Tạm ẩn nút kéo ở Phase vuốt
+	
 	var fish_data = _current_shadow.get_fish_data() if _current_shadow else null
 	var arrow_count := 4
 	var time_per_arrow := 2.0
@@ -321,7 +352,7 @@ func _on_qte_completed(success: bool) -> void:
 	else:
 		AudioManager.play_sfx("fish_escaped")
 		EventBus.fish_escaped.emit()
-		status_label.text = "Cá sổng! Vuốt sai rồi..."
+		_hud.show_status("Cá sổng! Vuốt sai rồi...", 2.0, Color.GRAY)
 		_reset_to_idle()
 
 
@@ -331,6 +362,9 @@ func _on_qte_completed(success: bool) -> void:
 func _start_phase4() -> void:
 	GameManager.change_state(GameManager.GameState.FISHING_MASH)
 	EventBus.mash_started.emit(4.0)
+	
+	_hud.set_action_visible(true)
+	_hud.set_action_text("SPAM!!", Color(1.0, 0.2, 0.2, 0.8)) # Chuyển sang nút màu đỏ
 
 	## Áp dụng Power bonus từ cần câu
 	var rod: RodData = PlayerInventory.get_equipped_rod()
@@ -351,7 +385,7 @@ func _on_mash_completed(fill: float) -> void:
 	## Kiểm tra Boss Rage
 	if _boss_rage_remaining > 0:
 		_boss_rage_remaining -= 1
-		status_label.text = "😡 BOSS NỔI ĐIÊN! Thêm %d vòng!" % (_boss_rage_remaining + 1)
+		_hud.show_status("😡 BOSS NỔI ĐIÊN! Thêm %d vòng!" % (_boss_rage_remaining + 1), 2.0, Color.RED)
 		await get_tree().create_timer(0.5).timeout
 		_start_phase3()  ## Lặp lại Phase 3+4
 	else:
@@ -367,6 +401,8 @@ func _show_result() -> void:
 	## Ẩn bóng cá trong khi hiện kết quả
 	if _current_shadow:
 		_current_shadow.visible = false
+		
+	_hud.set_action_visible(false)
 
 	## Tính phần thưởng
 	var weight  := 0.3
@@ -411,9 +447,6 @@ func _show_result() -> void:
 	_result_screen.closed.connect(_on_result_closed)
 	_result_screen.show_result(fish_data, weight, gold, exp_amt, _quality_multiplier)
 
-	print("[FishingController] Kết quả: %.2f kg | +%d Vàng | +%d EXP | x%.1f chất lượng" \
-		% [weight, gold, exp_amt, _quality_multiplier])
-
 
 func _on_result_closed() -> void:
 	_cleanup_node(_result_screen)
@@ -430,9 +463,9 @@ func _on_retrieve_early_pressed() -> void:
 
 	if _selected_bait.get("is_live", false):
 		EventBus.live_bait_lost.emit(_selected_bait)
-		status_label.text = "Mất cá mồi!"
+		_hud.show_status("Mất cá mồi!", 2.0, Color.RED)
 	else:
-		status_label.text = "Đã thu cần sớm."
+		_hud.show_status("Đã thu cần sớm.")
 
 	AudioManager.play_sfx("retrieve_line")
 	_reset_to_idle()
@@ -458,29 +491,20 @@ func _map_to_game_state(s: Phase1State) -> GameManager.GameState:
 
 
 func _update_ui_for_state(s: Phase1State) -> void:
+	_hud.set_action_visible(true)
 	match s:
 		Phase1State.IDLE:
-			status_label.text  = "Chọn mồi và quăng cần!"
-			btn_cast.text      = "QUĂNG CẦN"
-			btn_cast.disabled  = false
-			btn_early.visible  = false
-			bait_panel.visible = true
+			_hud.show_status("")
+			_hud.set_action_text("THẢ CẦN")
 		Phase1State.CASTING:
-			status_label.text  = "Đang quăng cần..."
-			btn_cast.disabled  = true
-			btn_early.visible  = false
-			bait_panel.visible = false
+			_hud.set_action_visible(false)
 		Phase1State.WAITING:
-			status_label.text  = "Đang chờ cá... 🎣"
-			btn_cast.text      = "THU CẦN"
-			btn_cast.disabled  = true
-			btn_early.visible  = true
+			_hud.set_action_text("THU CẦN")
 		Phase1State.SHADOW_COMING:
-			status_label.text  = "Có cá đang đến!"
-			btn_early.visible  = true
+			_hud.show_status("Có cá đang đến!", 0.0, Color.YELLOW)
+			_hud.set_action_text("THU CẦN")
 		Phase1State.BITE_WINDOW:
-			btn_early.visible  = false
-			bait_panel.visible = false
+			_hud.set_action_text("KÉO!", Color(1.0, 0.8, 0.0, 0.8))
 
 
 func _cleanup_node(node: Node) -> void:
@@ -501,6 +525,7 @@ func _reset_to_idle() -> void:
 	_cleanup_node(_mash_btn);    _mash_btn     = null
 	_cleanup_node(_result_screen); _result_screen = null
 	_cleanup_shadow()
+	_hud.set_action_visible(true)
 
 	## Reset session vars
 	_wait_timer    = 0.0
@@ -508,7 +533,7 @@ func _reset_to_idle() -> void:
 	_mash_fill     = 0.0
 	_boss_rage_remaining = 0
 
-	## Phao về vị trí ban đầu
+	## Phao về vị trí ban đầu (đầu cần câu)
 	var tween := create_tween()
-	tween.tween_property(float_node, "position", Vector2(0, 0), 0.3)
+	tween.tween_property(float_node, "position", Vector2(689, -578), 0.3)
 	tween.tween_callback(func(): _set_state(Phase1State.IDLE))

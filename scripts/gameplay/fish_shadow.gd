@@ -49,12 +49,10 @@ var _wobble_time: float = 0.0
 
 
 func _ready() -> void:
-	## Vị trí bắt đầu: bên trái màn hình, dưới mặt nước
-	## (960 = mặt nước, +200 = chìm xuống dưới)
-	global_position = Vector2(-100, 960 + 200)
+	pass
 
 
-func setup(fish_data, bait_data: Dictionary) -> void:
+func setup(fish_data, bait_data: Dictionary, target_pos: Vector2 = Vector2.ZERO) -> void:
 	_fish_data = fish_data
 	_bait_data = bait_data
 
@@ -80,8 +78,16 @@ func setup(fish_data, bait_data: Dictionary) -> void:
 		_speed *= 1.15
 
 	## Điểm đến: vị trí phao trong world space
-	## FishingRod (800,900) + Float offset (-300, 100) = (500, 1000)
-	_target_pos = Vector2(500, 960 + 150)
+	if target_pos != Vector2.ZERO:
+		_target_pos = target_pos
+	else:
+		_target_pos = Vector2(500, 960 + 150)
+		
+	## Spawn trong màn hình: phía trên phao (từ trên xuống), gần đường chân trời (y=600)
+	var start_x = clampf(_target_pos.x + randf_range(-200.0, 200.0), 100.0, 1820.0)
+	var start_y = maxf(610.0, _target_pos.y - randf_range(80.0, 150.0))
+	global_position = Vector2(start_x, start_y)
+		
 	_moving = true
 
 	## Hiệu ứng fade in
