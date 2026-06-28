@@ -14,6 +14,8 @@ extends CanvasLayer
 signal action_pressed()
 signal change_rod_pressed()
 signal change_bait_pressed()
+signal open_bait_selection()
+signal open_shop()
 
 const SCREEN_W := 1920.0
 const SCREEN_H := 1080.0
@@ -28,6 +30,7 @@ var _profile_name: Label
 # --- Top Right (Currency) ---
 var _gold_label:   Label
 var _gem_label:    Label
+var _btn_shop:     Button
 
 # --- Bottom Left (Equip) ---
 var _btn_rod:  Button
@@ -145,6 +148,14 @@ func _build_ui() -> void:
 	_gem_label.add_theme_color_override("font_color", Color(0.4, 0.8, 1.0))
 	top_right.add_child(_gem_label)
 
+	_btn_shop = Button.new()
+	_btn_shop.position = Vector2(-750, 0)
+	_btn_shop.size = Vector2(140, 50)
+	_btn_shop.text = "🛒 SHOP"
+	_btn_shop.add_theme_font_size_override("font_size", 28)
+	_btn_shop.pressed.connect(func(): open_shop.emit())
+	top_right.add_child(_btn_shop)
+
 
 	# Đường viền dưới top bar
 	var border := ColorRect.new()
@@ -197,7 +208,7 @@ func _build_ui() -> void:
 	_btn_bait.pivot_offset = Vector2(60, 60)
 	_btn_bait.text = "🪱"
 	_btn_bait.add_theme_font_size_override("font_size", 60)
-	_btn_bait.pressed.connect(func(): change_bait_pressed.emit())
+	_btn_bait.pressed.connect(func(): open_bait_selection.emit())
 	bot_left.add_child(_btn_bait)
 	
 	_bait_label = Label.new()

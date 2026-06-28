@@ -55,6 +55,7 @@ func add_fish(fish_data, weight: float) -> void:
 		"rank":       "C",
 		"icon":       "🐟",
 		"weight":     weight,
+		"gold_value": 10,
 		"timestamp":  Time.get_unix_time_from_system(),
 	}
 
@@ -63,11 +64,13 @@ func add_fish(fish_data, weight: float) -> void:
 		entry["fish_name"] = fish_data.display_name
 		entry["rank"]      = fish_data.rank
 		entry["icon"]      = fish_data.display_icon
+		entry["gold_value"] = fish_data.gold_value
 	elif fish_data is Dictionary:
 		entry["fish_id"]   = str(fish_data.get("id",   "unknown"))
 		entry["fish_name"] = str(fish_data.get("name", fish_data.get("display_name", "Cá")))
 		entry["rank"]      = str(fish_data.get("rank", "C"))
 		entry["icon"]      = str(fish_data.get("display_icon", "🐟"))
+		entry["gold_value"] = int(fish_data.get("gold_value", 10))
 
 	fish_inventory.append(entry)
 	EventBus.inventory_updated.emit()
@@ -85,6 +88,19 @@ func get_best_fish_by_rank(rank: String) -> Dictionary:
 			if best.is_empty() or entry.get("weight", 0.0) > best.get("weight", 0.0):
 				best = entry
 	return best
+
+
+func sell_all_fish() -> int:
+	var total_gold: int = 0
+	for fish in fish_inventory:
+		total_gold += fish.get("gold_value", 10)
+	
+	if total_gold > 0:
+		GameManager.add_currency("gold", total_gold)
+		fish_inventory.clear()
+		EventBus.inventory_updated.emit()
+	
+	return total_gold
 
 
 # =============================================

@@ -1,0 +1,174 @@
+[gd_scene load_steps=2 format=3 uid="uid://shop_screen_uid_1"]
+
+[ext_resource type="Script" path="res://scripts/ui/shop_screen.gd" id="1_xxx"]
+
+[node name="ShopScreen" type="CanvasLayer"]
+script = ExtResource("1_xxx")
+
+[node name="Root" type="Control" parent="."]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Overlay" type="ColorRect" parent="Root"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 0.85)
+
+[node name="TitleLabel" type="Label" parent="Root"]
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -200.0
+offset_top = 50.0
+offset_right = 200.0
+offset_bottom = 120.0
+grow_horizontal = 2
+theme_override_colors/font_color = Color(1, 0.85, 0.1, 1)
+theme_override_font_sizes/font_size = 64
+text = "CỬA HÀNG"
+horizontal_alignment = 1
+
+[node name="HBoxContainer" type="HBoxContainer" parent="Root"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -800.0
+offset_top = -300.0
+offset_right = 800.0
+offset_bottom = 300.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 50
+alignment = 1
+
+[node name="LeftPanel" type="PanelContainer" parent="Root/HBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="ColorRect" type="ColorRect" parent="Root/HBoxContainer/LeftPanel"]
+layout_mode = 2
+color = Color(0.1, 0.15, 0.2, 0.9)
+
+[node name="VBoxContainer" type="VBoxContainer" parent="Root/HBoxContainer/LeftPanel"]
+layout_mode = 2
+theme_override_constants/separation = 30
+alignment = 1
+
+[node name="Title" type="Label" parent="Root/HBoxContainer/LeftPanel/VBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 40
+text = "📦 GIỎ CÁ CỦA BẠN"
+horizontal_alignment = 1
+
+[node name="FishCountLabel" type="Label" parent="Root/HBoxContainer/LeftPanel/VBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 32
+text = "Số lượng cá trong giỏ: 0"
+horizontal_alignment = 1
+
+[node name="EstimatedGoldLabel" type="Label" parent="Root/HBoxContainer/LeftPanel/VBoxContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.85, 0.1, 1)
+theme_override_font_sizes/font_size = 32
+text = "Giá trị ước tính: 🪙 0"
+horizontal_alignment = 1
+
+[node name="SellAllBtn" type="Button" parent="Root/HBoxContainer/LeftPanel/VBoxContainer"]
+custom_minimum_size = Vector2(400, 100)
+layout_mode = 2
+size_flags_horizontal = 4
+theme_override_font_sizes/font_size = 40
+text = "BÁN TẤT CẢ"
+
+[node name="RightPanel" type="PanelContainer" parent="Root/HBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="ColorRect" type="ColorRect" parent="Root/HBoxContainer/RightPanel"]
+layout_mode = 2
+color = Color(0.2, 0.15, 0.1, 0.9)
+
+[node name="VBoxContainer" type="VBoxContainer" parent="Root/HBoxContainer/RightPanel"]
+layout_mode = 2
+theme_override_constants/separation = 30
+alignment = 1
+
+[node name="Title" type="Label" parent="Root/HBoxContainer/RightPanel/VBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 40
+text = "🛒 QUẦY VẬT PHẨM"
+horizontal_alignment = 1
+
+[node name="BaitCContainer" type="HBoxContainer" parent="Root/HBoxContainer/RightPanel/VBoxContainer"]
+layout_mode = 2
+theme_override_constants/separation = 20
+alignment = 1
+
+[node name="Desc" type="Label" parent="Root/HBoxContainer/RightPanel/VBoxContainer/BaitCContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 32
+text = "Mồi Thường (Rank C-B)"
+
+[node name="BuyBaitCBtn" type="Button" parent="Root/HBoxContainer/RightPanel/VBoxContainer/BaitCContainer"]
+custom_minimum_size = Vector2(250, 80)
+layout_mode = 2
+theme_override_font_sizes/font_size = 32
+text = "Mua 🪙 50"
+
+[node name="BaitLiveContainer" type="HBoxContainer" parent="Root/HBoxContainer/RightPanel/VBoxContainer"]
+layout_mode = 2
+theme_override_constants/separation = 20
+alignment = 1
+
+[node name="Desc" type="Label" parent="Root/HBoxContainer/RightPanel/VBoxContainer/BaitLiveContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 32
+text = "Mồi Sống (Rank A-SS)"
+
+[node name="BuyBaitLiveBtn" type="Button" parent="Root/HBoxContainer/RightPanel/VBoxContainer/BaitLiveContainer"]
+custom_minimum_size = Vector2(250, 80)
+layout_mode = 2
+theme_override_font_sizes/font_size = 32
+text = "Mua 🪙 500"
+
+[node name="StatusLabel" type="Label" parent="Root"]
+layout_mode = 1
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -300.0
+offset_top = -180.0
+offset_right = 300.0
+offset_bottom = -130.0
+grow_horizontal = 2
+grow_vertical = 0
+theme_override_font_sizes/font_size = 32
+text = "Status message"
+horizontal_alignment = 1
+
+[node name="CloseBtn" type="Button" parent="Root"]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -120.0
+offset_top = 40.0
+offset_right = -40.0
+offset_bottom = 120.0
+grow_horizontal = 0
+theme_override_font_sizes/font_size = 40
+text = "X"

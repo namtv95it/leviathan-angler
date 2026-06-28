@@ -58,7 +58,8 @@ var _hud: HUD = null
 @onready var ui_layer      := $UI
 
 const FishShadowScene = preload("res://scenes/gameplay/fish_shadow.tscn")
-
+const ShopScreenScene = preload("res://scenes/ui/shop_screen.tscn")
+const BaitSelectionScreenScene = preload("res://scenes/ui/bait_selection_screen.tscn")
 
 func _ready() -> void:
 	## Ẩn UI cũ (để đề phòng chưa xóa)
@@ -72,8 +73,9 @@ func _ready() -> void:
 	add_child(_hud)
 	
 	_hud.action_pressed.connect(_on_hud_action_pressed)
-	_hud.change_bait_pressed.connect(_on_hud_change_bait)
+	_hud.open_bait_selection.connect(_on_hud_open_bait_selection)
 	_hud.change_rod_pressed.connect(_on_hud_change_rod)
+	_hud.open_shop.connect(_on_hud_open_shop)
 	
 	_set_state(Phase1State.IDLE)
 	print("[FishingController] Sẵn sàng.")
@@ -110,19 +112,22 @@ func _on_hud_action_pressed() -> void:
 			_mash_btn.trigger_action()
 
 
-func _on_hud_change_bait() -> void:
+func _on_hud_open_bait_selection() -> void:
 	if _state != Phase1State.IDLE:
 		_hud.show_status("Không thể đổi mồi lúc này!", 2.0, Color.RED)
 		return
 		
-	# Giả lập chức năng đổi mồi xoay vòng
-	var current_id = _selected_bait.get("id", "bait_free")
-	if current_id == "bait_free":
-		_select_bait_c()
-	elif current_id == "bait_lure_c":
-		_select_bait_live()
-	else:
+	var bait_screen = BaitSelectionScreenScene.instantiate()
+	bait_screen.bait_chosen.connect(_on_bait_chosen)
+	add_child(bait_screen)
+
+func _on_bait_chosen(bait_id: String) -> void:
+	if bait_id == "bait_free":
 		_select_bait_free()
+	elif bait_id == "bait_lure_c":
+		_select_bait_c()
+	elif bait_id == "bait_live":
+		_select_bait_live()
 
 
 func _on_hud_change_rod() -> void:
@@ -130,6 +135,14 @@ func _on_hud_change_rod() -> void:
 		_hud.show_status("Không thể đổi cần lúc này!", 2.0, Color.RED)
 		return
 	_hud.show_status("Chức năng đang phát triển...", 2.0, Color.YELLOW)
+
+
+func _on_hud_open_shop() -> void:
+	if _state != Phase1State.IDLE:
+		_hud.show_status("Đang bận câu cá!", 2.0, Color.RED)
+		return
+	var shop = ShopScreenScene.instantiate()
+	add_child(shop)
 
 
 # =============================================
