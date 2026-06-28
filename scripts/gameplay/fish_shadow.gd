@@ -11,11 +11,11 @@ signal reached_float
 
 # Tốc độ bơi (pixel/giây) — cá hiếm bơi nhanh hơn để gây bất ngờ
 const SPEED_BY_RANK := {
-	"C":  180.0,
-	"B":  220.0,
-	"A":  280.0,
-	"S":  340.0,
-	"SS": 400.0,
+	"C":  90.0,
+	"B":  120.0,
+	"A":  150.0,
+	"S":  190.0,
+	"SS": 230.0,
 }
 
 # Kích thước bóng theo rank (width, height)
@@ -58,15 +58,19 @@ func setup(fish_data, bait_data: Dictionary, target_pos: Vector2 = Vector2.ZERO)
 
 	var rank: String = _get_rank()
 
-	## Áp dụng kích thước
-	var size: Vector2 = SIZE_BY_RANK.get(rank, Vector2(60, 20))
-	shadow_sprite.offset_left   = -size.x / 2
-	shadow_sprite.offset_right  =  size.x / 2
-	shadow_sprite.offset_top    = -size.y / 2
-	shadow_sprite.offset_bottom =  size.y / 2
-
-	## Áp dụng màu
-	shadow_sprite.color = COLOR_BY_RANK.get(rank, Color(0, 0, 0, 0.3))
+	var tex_path := ""
+	match rank:
+		"C": tex_path = "res://assets/art/shadow_small.png"
+		"B": tex_path = "res://assets/art/shadow_medium.png"
+		"A", "S": tex_path = "res://assets/art/shadow_large.png"
+		"SS": tex_path = "res://assets/art/shadow_boss.png"
+		_: tex_path = "res://assets/art/shadow_small.png"
+	
+	if ResourceLoader.exists(tex_path):
+		shadow_sprite.texture = load(tex_path)
+	
+	# Đặt độ trong suốt nhẹ cho bóng dưới nước
+	shadow_sprite.modulate.a = 0.65
 
 	## Hiển thị gợi ý kích thước (không lộ rank cụ thể)
 	size_indicator.text = _get_size_hint(rank)
@@ -83,9 +87,10 @@ func setup(fish_data, bait_data: Dictionary, target_pos: Vector2 = Vector2.ZERO)
 	else:
 		_target_pos = Vector2(500, 960 + 150)
 		
-	## Spawn trong màn hình: phía trên phao (từ trên xuống), gần đường chân trời (y=600)
-	var start_x = clampf(_target_pos.x + randf_range(-200.0, 200.0), 100.0, 1820.0)
-	var start_y = maxf(610.0, _target_pos.y - randf_range(80.0, 150.0))
+	## Spawn trong màn hình: xuất phát từ xa hơn và có thể gần đường chân trời (y=500)
+	var offset_x = randf_range(300.0, 500.0) * (1 if randf() > 0.5 else -1)
+	var start_x = clampf(_target_pos.x + offset_x, 100.0, 1820.0)
+	var start_y = maxf(500.0, _target_pos.y - randf_range(150.0, 300.0))
 	global_position = Vector2(start_x, start_y)
 		
 	_moving = true

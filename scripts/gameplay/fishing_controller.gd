@@ -53,7 +53,10 @@ var _hud: HUD = null
 # THAM CHIẾU NODE (tất cả đã có trong scene)
 # =============================================
 @onready var float_node    := $FishingRod/Float
+@onready var float_label   := $FishingRod/Float/FloatLabel
 @onready var fishing_line  := $FishingRod/FishingLine
+@onready var rod_visual    := $FishingRod/RodVisual
+@onready var tip_marker    := $FishingRod/RodVisual/TipMarker
 @onready var shadow_layer  := $FishShadowLayer
 @onready var ui_layer      := $UI
 
@@ -67,6 +70,11 @@ func _ready() -> void:
 		ui_layer.visible = false
 
 	_select_bait_free()
+	
+	## Khởi tạo các điểm cho dây cước (20 đoạn)
+	fishing_line.clear_points()
+	for i in range(21):
+		fishing_line.add_point(Vector2.ZERO)
 	
 	## Thêm HUD vào scene
 	_hud = HUD.new()
@@ -82,8 +90,31 @@ func _ready() -> void:
 
 
 func _process(delta: float) -> void:
-	if is_instance_valid(fishing_line) and is_instance_valid(float_node):
-		fishing_line.set_point_position(1, float_node.position)
+	if is_instance_valid(fishing_line) and is_instance_valid(float_node) and is_instance_valid(tip_marker):
+		var p0 = rod_visual.transform * tip_marker.position
+		
+		if _state == Phase1State.IDLE:
+			fishing_line.visible = false
+			float_node.visible = false
+		else:
+			fishing_line.visible = true
+			float_node.visible = true
+			var p2 = float_node.position
+			
+			# Độ võng của dây cước
+			var sag = 100.0
+			if _state == Phase1State.CASTING:
+				sag = 30.0 # Dây căng khi quăng
+			
+			var p1 = (p0 + p2) / 2.0
+			p1.y += sag
+			
+			# Bezier Curve
+			for i in range(21):
+				var t = float(i) / 20.0
+				var q0 = p0.lerp(p1, t)
+				var q1 = p1.lerp(p2, t)
+				fishing_line.set_point_position(i, q0.lerp(q1, t))
 
 	match _state:
 		Phase1State.WAITING:
@@ -157,6 +188,7 @@ func _select_bait_free() -> void:
 			"id": "bait_free", "name": "Mồi Cơ Bản", "tier": "free",
 			"pointer_speed_bonus": 0.0, "is_live": false, "zone_bonus": "",
 		}
+	_update_float_visual()
 	EventBus.bait_selected.emit(_selected_bait)
 
 
@@ -169,6 +201,7 @@ func _select_bait_c() -> void:
 			"id": "bait_lure_c", "name": "Mồi Thường", "tier": "C",
 			"pointer_speed_bonus": 0.0, "is_live": false, "zone_bonus": "green",
 		}
+	_update_float_visual()
 	EventBus.bait_selected.emit(_selected_bait)
 
 
@@ -181,7 +214,18 @@ func _select_bait_live() -> void:
 		"is_live": true,
 		"zone_bonus": "",
 	}
+	_update_float_visual()
 	EventBus.bait_selected.emit(_selected_bait)
+
+func _update_float_visual() -> void:
+	if float_label == null: return
+	var b_id = _selected_bait.get("id", "")
+	if b_id == "bait_lure_c":
+		float_label.text = "🪱"
+	elif b_id == "bait_live":
+		float_label.text = "🐟"
+	else:
+		float_label.text = "🍞"
 
 
 # =============================================
@@ -200,11 +244,20 @@ func _on_cast_pressed() -> void:
 
 	## Animation quăng cần: phao bay ra
 	var tween := create_tween()
-	tween.tween_property(float_node, "position", Vector2(1050, -430), 0.4)\
-		 .from(Vector2(689, -578))\
+	tween.set_parallel(true)
+	tween.tween_property(rod_visual, "rotation", 0.87, 0.4)\
 		 .set_ease(Tween.EASE_OUT)\
 		 .set_trans(Tween.TRANS_QUAD)
-	tween.tween_callback(_on_cast_complete)
+	
+	# float_node sẽ bay từ đỉnh cần câu hiện tại
+	var start_pos = rod_visual.transform * tip_marker.position
+	# Quăng xa hơn về hướng mặt trời
+	var target_pos = Vector2(1100, -280)
+	tween.tween_property(float_node, "position", target_pos, 0.4)\
+		 .from(start_pos)\
+		 .set_ease(Tween.EASE_OUT)\
+		 .set_trans(Tween.TRANS_QUAD)
+	tween.chain().tween_callback(_on_cast_complete)
 
 
 func _on_cast_complete() -> void:
@@ -219,8 +272,8 @@ func _on_cast_complete() -> void:
 func _process_waiting(delta: float) -> void:
 	_wait_timer += delta
 
-	## Hiệu ứng phao nhấp nhô
-	float_node.position.y = -430 + sin(_wait_timer * 2.0) * 5.0
+	## Hiệu ứng phao nhấp nhô (ở vị trí mới)
+	float_node.position.y = -280 + sin(_wait_timer * 2.0) * 5.0
 
 	if _wait_timer >= _wait_duration:
 		_spawn_fish_shadow()
@@ -548,5 +601,7 @@ func _reset_to_idle() -> void:
 
 	## Phao về vị trí ban đầu (đầu cần câu)
 	var tween := create_tween()
-	tween.tween_property(float_node, "position", Vector2(689, -578), 0.3)
-	tween.tween_callback(func(): _set_state(Phase1State.IDLE))
+	tween.set_parallel(true)
+	tween.tween_property(rod_visual, "rotation", 0.35, 0.3)
+	tween.tween_property(float_node, "position", rod_visual.transform * tip_marker.position, 0.3)
+	tween.chain().tween_callback(func(): _set_state(Phase1State.IDLE))

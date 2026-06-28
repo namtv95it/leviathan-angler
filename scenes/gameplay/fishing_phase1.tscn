@@ -1,52 +1,49 @@
 [gd_scene format=3 uid="uid://cyvsn3lu5dsih"]
 
 [ext_resource type="Script" uid="uid://mq1ywkh7gypb" path="res://scripts/gameplay/fishing_controller.gd" id="1"]
+[ext_resource type="Texture2D" uid="uid://du43n2lmqq6n3" path="res://assets/art/background.png" id="bg_tex"]
+[ext_resource type="Texture2D" uid="uid://cte73tta6106t" path="res://assets/art/fish_rod.png" id="rod_tex"]
 
 [node name="FishingScene" type="Node2D" unique_id=160769338]
 script = ExtResource("1")
 
-[node name="Background" type="ColorRect" parent="." unique_id=781395586]
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
+[node name="Background" type="TextureRect" parent="." unique_id=781395586]
 offset_right = 1920.0
 offset_bottom = 1080.0
-color = Color(0.05, 0.12, 0.25, 1)
-
-[node name="WaterLine" type="ColorRect" parent="." unique_id=1177608044]
-offset_top = 600.0
-offset_right = 1920.0
-offset_bottom = 1080.0
-color = Color(0.04, 0.18, 0.38, 1)
+texture = ExtResource("bg_tex")
+expand_mode = 1
 
 [node name="FishingRod" type="Node2D" parent="." unique_id=23465411]
-position = Vector2(300, 1080)
+position = Vector2(400, 900)
 
-[node name="RodVisual" type="Node2D" parent="FishingRod"]
-rotation = 0.872665
+[node name="RodVisual" type="Node2D" parent="FishingRod" unique_id=8108484]
+rotation = 0.35
 
-[node name="RodSprite" type="ColorRect" parent="FishingRod/RodVisual" unique_id=578336633]
-offset_left = -12.0
-offset_top = -900.0
-offset_right = 12.0
-offset_bottom = 0.0
-color = Color(0.55, 0.35, 0.15, 1)
+[node name="TipMarker" type="Marker2D" parent="FishingRod/RodVisual" unique_id=213027353]
+position = Vector2(-31.738289, -798.5297)
+
+[node name="RodSprite" type="Sprite2D" parent="FishingRod/RodVisual" unique_id=578336633]
+position = Vector2(-62.064484, -170.02644)
+scale = Vector2(0.16427839, 0.18029818)
+texture = ExtResource("rod_tex")
+offset = Vector2(0, -900)
 
 [node name="FishingLine" type="Line2D" parent="FishingRod" unique_id=1754430058]
-points = PackedVector2Array(689, -578, 1050, -430)
+points = PackedVector2Array(480, -440, 1050, -430)
 width = 2.0
 default_color = Color(0.9, 0.9, 0.8, 0.8)
 
 [node name="Float" type="Node2D" parent="FishingRod" unique_id=1722215067]
 position = Vector2(1050, -430)
 
-[node name="FloatSprite" type="ColorRect" parent="FishingRod/Float" unique_id=934002774]
-offset_left = -10.0
+[node name="FloatLabel" type="Label" parent="FishingRod/Float"]
+offset_left = -20.0
 offset_top = -20.0
-offset_right = 10.0
-offset_bottom = 10.0
-color = Color(0.9, 0.2, 0.2, 1)
+offset_right = 20.0
+offset_bottom = 20.0
+theme_override_font_sizes/font_size = 32
+text = "🍞"
+horizontal_alignment = 1
+vertical_alignment = 1
 
 [node name="FishShadowLayer" type="Node2D" parent="." unique_id=2579229]
-
-

@@ -35,12 +35,12 @@ var _btn_shop:     Button
 # --- Bottom Left (Equip) ---
 var _btn_rod:  Button
 var _btn_bait: Button
-var _rod_label: Label
 var _bait_label: Label
 
 # --- Bottom Right (Action) ---
-var _btn_action: Button
 var _btn_action_bg: ColorRect
+var _btn_action: TextureButton
+var _btn_action_label: Label
 
 
 # --- Status Message ---
@@ -222,41 +222,38 @@ func _build_ui() -> void:
 
 	# --- BOTTOM RIGHT: BIG ACTION BUTTON ---
 	var bot_right := Control.new()
-	bot_right.position = Vector2(SCREEN_W - 240, SCREEN_H - 240)
+	bot_right.position = Vector2(SCREEN_W - 280, SCREEN_H - 280)
 	bot_right.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	root.add_child(bot_right)
 	
-	# Background Glow
-	_btn_action_bg = ColorRect.new()
-	_btn_action_bg.position = Vector2(-150, -150)
-	_btn_action_bg.size = Vector2(300, 300)
-	_btn_action_bg.color = Color(0.6, 0.1, 1.0, 0.4) # Tím/Xanh glow
-	# Trong Godot 4, nếu muốn nút hình tròn có thể dùng StyleBoxFlat hoặc Texture, tạm thời ta dùng hiệu ứng modulate nhấp nháy.
-	bot_right.add_child(_btn_action_bg)
+	# Background Glow (removed because the texture already has it)
+	# _btn_action_bg = ColorRect.new()
 	
 	# The real button
-	_btn_action = Button.new()
-	_btn_action.position = Vector2(-120, -120)
-	_btn_action.size = Vector2(240, 240)
-	_btn_action.pivot_offset = Vector2(120, 120)
-	_btn_action.text = "THẢ / KÉO"
-	_btn_action.add_theme_font_size_override("font_size", 40)
+	_btn_action = TextureButton.new()
+	_btn_action.position = Vector2(-200, -200)
+	_btn_action.size = Vector2(400, 400)
+	_btn_action.pivot_offset = Vector2(200, 200)
+	_btn_action.ignore_texture_size = true
+	_btn_action.stretch_mode = TextureButton.STRETCH_SCALE
+	
+	var tex_normal = load("res://assets/art/btn_action_nomal.png")
+	var tex_pressed = load("res://assets/art/btn_action_pressed.png")
+	if tex_normal: _btn_action.texture_normal = tex_normal
+	if tex_pressed: _btn_action.texture_pressed = tex_pressed
+	
 	_btn_action.pressed.connect(func(): 
 		_play_button_anim()
 		action_pressed.emit()
 	)
 	bot_right.add_child(_btn_action)
 
-
 # =============================================
 # API HỖ TRỢ GAMEPLAY
 # =============================================
 
 func set_action_text(text: String, glow_color: Color = Color(0.6, 0.1, 1.0, 0.4)) -> void:
-	if _btn_action:
-		_btn_action.text = text
-	if _btn_action_bg:
-		_btn_action_bg.color = glow_color
+	pass
 
 func set_action_visible(is_visible: bool) -> void:
 	if _btn_action:
