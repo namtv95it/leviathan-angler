@@ -141,11 +141,32 @@ func _load_placeholder_fish() -> void:
 	push_warning("[FishDatabase] Dùng dữ liệu tạm. Hãy tạo file .tres trong resources/fish/")
 
 	var placeholder_fish := [
+		# Rank C
 		{"id": "ca_com",    "name": "Cá Cơm",           "rank": "C",  "weight_min": 0.05,  "weight_max": 0.45,   "gold_value": 10,    "exp_value": 5,    "is_boss": false, "display_icon": "🐟", "attracted_by_live_bait_rank": ""},
-		{"id": "ca_thu",    "name": "Cá Thu",            "rank": "B",  "weight_min": 1.5,   "weight_max": 7.0,    "gold_value": 80,    "exp_value": 30,   "is_boss": false, "display_icon": "🐠", "attracted_by_live_bait_rank": "C"},
+		{"id": "ca_bon",    "name": "Cá Bơn",           "rank": "C",  "weight_min": 0.2,   "weight_max": 1.2,    "gold_value": 15,    "exp_value": 8,    "is_boss": false, "display_icon": "🐠", "attracted_by_live_bait_rank": ""},
+		{"id": "ca_trap",   "name": "Cá Tráp",          "rank": "C",  "weight_min": 0.5,   "weight_max": 2.5,    "gold_value": 25,    "exp_value": 12,   "is_boss": false, "display_icon": "🐡", "attracted_by_live_bait_rank": ""},
+		{"id": "ca_trich",  "name": "Cá Trích",         "rank": "C",  "weight_min": 0.1,   "weight_max": 0.8,    "gold_value": 12,    "exp_value": 6,    "is_boss": false, "display_icon": "🐟", "attracted_by_live_bait_rank": ""},
+		
+		# Rank B
+		{"id": "ca_thu",    "name": "Cá Thu",            "rank": "B",  "weight_min": 1.5,   "weight_max": 7.0,    "gold_value": 80,    "exp_value": 30,   "is_boss": false, "display_icon": "🐟", "attracted_by_live_bait_rank": "C"},
+		{"id": "ca_hoi",    "name": "Cá Hồi",            "rank": "B",  "weight_min": 2.0,   "weight_max": 12.0,   "gold_value": 120,   "exp_value": 45,   "is_boss": false, "display_icon": "🍣", "attracted_by_live_bait_rank": "C"},
+		{"id": "ca_ngu",    "name": "Cá Ngừ",            "rank": "B",  "weight_min": 5.0,   "weight_max": 25.0,   "gold_value": 180,   "exp_value": 60,   "is_boss": false, "display_icon": "🐠", "attracted_by_live_bait_rank": "C"},
+		{"id": "ca_kiem",   "name": "Cá Kiếm",           "rank": "B",  "weight_min": 10.0,  "weight_max": 45.0,   "gold_value": 250,   "exp_value": 80,   "is_boss": false, "display_icon": "🗡️", "attracted_by_live_bait_rank": "C"},
+		
+		# Rank A
 		{"id": "ca_map",    "name": "Cá Mập",            "rank": "A",  "weight_min": 40.0,  "weight_max": 180.0,  "gold_value": 500,   "exp_value": 150,  "is_boss": false, "display_icon": "🦈", "attracted_by_live_bait_rank": "B"},
+		{"id": "ca_duoi",   "name": "Cá Đuối",           "rank": "A",  "weight_min": 20.0,  "weight_max": 90.0,   "gold_value": 450,   "exp_value": 130,  "is_boss": false, "display_icon": "🛸", "attracted_by_live_bait_rank": "B"},
+		{"id": "muc_ong",   "name": "Mực Khổng Lồ",      "rank": "A",  "weight_min": 30.0,  "weight_max": 150.0,  "gold_value": 600,   "exp_value": 180,  "is_boss": false, "display_icon": "🦑", "attracted_by_live_bait_rank": "B"},
+		
+		# Rank S
 		{"id": "ca_vua",    "name": "Cá Vua Đại Dương",  "rank": "S",  "weight_min": 250.0, "weight_max": 750.0,  "gold_value": 3000,  "exp_value": 800,  "is_boss": true,  "display_icon": "👑", "attracted_by_live_bait_rank": "A"},
+		{"id": "ca_voi",    "name": "Cá Voi Xanh",       "rank": "S",  "weight_min": 1500.0,"weight_max": 5000.0, "gold_value": 4500,  "exp_value": 1200, "is_boss": true,  "display_icon": "🐋", "attracted_by_live_bait_rank": "A"},
+		{"id": "cua_vua",   "name": "Cua Vua Đột Biến",  "rank": "S",  "weight_min": 80.0,  "weight_max": 200.0,  "gold_value": 3500,  "exp_value": 900,  "is_boss": true,  "display_icon": "🦀", "attracted_by_live_bait_rank": "A"},
+		
+		# Rank SS
 		{"id": "thuy_quai", "name": "Thủy Quái Cổ Đại",  "rank": "SS", "weight_min": 800.0, "weight_max": 4500.0, "gold_value": 20000, "exp_value": 5000, "is_boss": true,  "display_icon": "🦕", "attracted_by_live_bait_rank": "S"},
+		{"id": "kraken",    "name": "Mực Ma Kraken",     "rank": "SS", "weight_min": 1000.0,"weight_max": 6000.0, "gold_value": 25000, "exp_value": 6000, "is_boss": true,  "display_icon": "🐙", "attracted_by_live_bait_rank": "S"},
+		{"id": "rong_bien", "name": "Rồng Biển",         "rank": "SS", "weight_min": 500.0, "weight_max": 3000.0, "gold_value": 30000, "exp_value": 7500, "is_boss": true,  "display_icon": "🐉", "attracted_by_live_bait_rank": "S"},
 	]
 
 	for data in placeholder_fish:
