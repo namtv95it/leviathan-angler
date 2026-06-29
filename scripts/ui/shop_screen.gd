@@ -247,7 +247,7 @@ func _refresh_inventory() -> void:
 		
 		if not dex.has(fid):
 			dex[fid] = {
-				"name": f.get("fish_name", "Unknown"),
+				"name": f.get("fish_name", "Không rõ"),
 				"icon": f.get("icon", "🐟"),
 				"rank": f.get("rank", "C"),
 				"count": 0,

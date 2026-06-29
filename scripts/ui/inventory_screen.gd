@@ -66,7 +66,7 @@ func _build_ui() -> void:
 	# TAB 1: BỘ SƯU TẬP CÁ
 	# ==============================
 	var tab_dex = MarginContainer.new()
-	tab_dex.name = "🐟 FISH DEX"
+	tab_dex.name = "🐟 BỘ SƯU TẬP"
 	tab_dex.add_theme_constant_override("margin_left", 30)
 	tab_dex.add_theme_constant_override("margin_right", 30)
 	tab_dex.add_theme_constant_override("margin_top", 30)
@@ -197,7 +197,7 @@ func _populate_data() -> void:
 		var fid = f.get("fish_id", "unknown")
 		if not dex.has(fid):
 			dex[fid] = {
-				"name": f.get("fish_name", "Unknown"),
+				"name": f.get("fish_name", "Không rõ"),
 				"icon": f.get("icon", "🐟"),
 				"rank": f.get("rank", "C"),
 				"count": 0,
@@ -214,7 +214,13 @@ func _populate_data() -> void:
 		empty_lbl.add_theme_font_size_override("font_size", 28)
 		_fish_grid.add_child(empty_lbl)
 	else:
-		for fid in dex.keys():
+		var sorted_fids = dex.keys()
+		var rank_order = {"C": 0, "B": 1, "A": 2, "S": 3, "SS": 4, "SSS": 5}
+		sorted_fids.sort_custom(func(a, b):
+			return rank_order.get(dex[a]["rank"], 0) > rank_order.get(dex[b]["rank"], 0)
+		)
+		
+		for fid in sorted_fids:
 			var data = dex[fid]
 			var card = PanelContainer.new()
 			var style_card = StyleBoxFlat.new()

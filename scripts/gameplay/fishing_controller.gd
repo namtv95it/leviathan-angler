@@ -47,6 +47,8 @@ var _quality_multiplier: float = 1.0
 var _mash_fill: float = 0.0
 ## Số lần boss rage còn lại
 var _boss_rage_remaining: int = 0
+## Khoảng cách kéo phao lại sau mỗi vòng giằng co
+var _pull_per_cycle: float = 0.0
 ## Đang trong giai đoạn giằng co
 var _is_struggling: bool = false
 ## HUD overlay
@@ -90,9 +92,6 @@ func _ready() -> void:
 	add_child(dynamic_bg)
 	move_child(dynamic_bg, 0)
 
-	var last_bait = GameManager.player_data.get("selected_bait", "bait_free")
-	_on_bait_chosen(last_bait)
-	
 	_update_rod_visual()
 	
 	## Khởi tạo các điểm cho dây cước (20 đoạn)
@@ -112,6 +111,10 @@ func _ready() -> void:
 	_hud.go_home.connect(_on_hud_go_home)
 	_hud.auto_fish_toggled.connect(_on_auto_fish_toggled)
 	EventBus.open_fish_library.connect(_on_open_fish_library)
+	
+	# Khởi tạo mồi câu sau khi HUD đã connect signals
+	var last_bait = GameManager.player_data.get("selected_bait", "bait_free")
+	_on_bait_chosen(last_bait)
 	
 	_set_state(Phase1State.IDLE)
 	print("[FishingController] Sẵn sàng.")
@@ -171,9 +174,8 @@ func _process(delta: float) -> void:
 			pass  ## Timing Bar tự xử lý qua _process nội bộ
 			
 	if _is_struggling:
-		# Kéo phao lùi về sau (drift dần về bên phải + rung lắc mạnh)
-		float_node.position.x += 15.0 * delta # Trôi dần về sau
-		float_node.position.y += randf_range(-6.0, 6.0) # Rung lắc ngang dọc
+		# Cá vùng vẫy (rung lắc)
+		float_node.position.y += randf_range(-6.0, 6.0)
 		float_node.position.x += randf_range(-3.0, 3.0)
 		
 		# Bóng cá bám theo phao trong lúc giằng co
@@ -463,7 +465,7 @@ func _on_cast_pressed() -> void:
 		bend_tw.tween_interval(0.15)
 		bend_tw.tween_callback(func(): if is_instance_valid(rod_visual): rod_visual.set_bend(-0.6))
 		bend_tw.tween_interval(0.15)
-		bend_tw.tween_callback(func(): if is_instance_valid(rod_visual): rod_visual.set_bend(0.0))
+		bend_tw.tween_callback(func(): if is_instance_valid(rod_visual): rod_visual.set_bend(0.4))
 
 	## 2. Mồi bay theo quỹ đạo parabol
 	var float_x_tw := create_tween()
@@ -481,6 +483,8 @@ func _on_cast_pressed() -> void:
 
 func _on_cast_complete() -> void:
 	_bait_in_air = false
+	if rod_visual.has_method("set_bend"):
+		rod_visual.set_bend(0.65) # Cần trĩu xuống thêm do sức nặng của mồi và nước
 	_set_state(Phase1State.WAITING)
 	_wait_duration = randf_range(2.0, 5.0)
 	_wait_timer    = 0.0
@@ -568,12 +572,14 @@ func _start_phase2() -> void:
 
 	var speed_bonus: float = 0.0
 
-	## Cá hiếm cũng ảnh hưởng tốc độ
 	var fish_data = _current_shadow.get_fish_data() if _current_shadow else null
+	var rank = "C"
 	if fish_data is FishData:
 		speed_bonus += (fish_data.bite_speed_multiplier - 1.0)
+		rank = fish_data.rank
 	elif fish_data is Dictionary:
 		speed_bonus += (float(fish_data.get("bite_speed_multiplier", 1.0)) - 1.0)
+		rank = fish_data.get("rank", "C")
 
 	## Cần câu xịn và cấp độ cao giúp thanh chạy chậm hơn
 	var rod: RodData = PlayerInventory.get_equipped_rod()
@@ -592,7 +598,7 @@ func _start_phase2() -> void:
 	add_child(_timing_bar)
 	_timing_bar.zone_tapped.connect(_on_timing_zone)
 	_timing_bar.time_up.connect(_on_timing_time_up)
-	_timing_bar.activate(speed_bonus)
+	_timing_bar.activate(speed_bonus, rank)
 
 
 func _on_timing_zone(zone: String) -> void:
@@ -617,7 +623,7 @@ func _on_timing_zone(zone: String) -> void:
 		"red":
 			## Kích hoạt Phase 3+4, chất lượng Hoàn Hảo
 			_quality_multiplier = 2.0
-			_hud.show_status("🔥 PERFECT! Vùng Đỏ — HIẾM!", 2.0, Color.RED)
+			_hud.show_status("🔥 HOÀN HẢO! Vùng Đỏ — HIẾM!", 2.0, Color.RED)
 			_start_phase3()
 
 
@@ -634,6 +640,7 @@ func _on_timing_time_up() -> void:
 # PHASE 3: QTE SWIPE MŨI TÊN
 # =============================================
 func _start_phase3() -> void:
+	var is_first_struggle = not _is_struggling
 	_is_struggling = true
 	if is_instance_valid(_current_shadow) and _current_shadow.has_method("set_struggling"):
 		_current_shadow.set_struggling(true)
@@ -657,6 +664,31 @@ func _start_phase3() -> void:
 			"S":  arrow_count = 6; time_per_arrow = 1.5
 			"SS": arrow_count = 7; time_per_arrow = 1.2
 			"SSS": arrow_count = 9; time_per_arrow = 0.9
+
+	if is_first_struggle:
+		var rank_local = "C"
+		if fish_data is FishData:
+			rank_local = fish_data.rank
+		elif fish_data is Dictionary:
+			rank_local = fish_data.get("rank", "C")
+			
+		var drag_dist = 150.0
+		match rank_local:
+			"B": drag_dist = 250.0
+			"A": drag_dist = 400.0
+			"S": drag_dist = 600.0
+			"SS": drag_dist = 850.0
+			"SSS": drag_dist = 1200.0 # Văng ra khỏi màn hình nếu màn hình 1920
+			
+		# Tween float ra xa do cá kéo
+		var tw = create_tween()
+		tw.tween_property(float_node, "position:x", float_node.position.x + drag_dist, 0.4)\
+			.set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC)
+			
+		if _boss_rage_remaining > 0:
+			_pull_per_cycle = drag_dist / (_boss_rage_remaining + 1)
+		else:
+			_pull_per_cycle = 0.0
 
 	## Áp dụng Flexibility bonus từ cần câu
 	var rod: RodData = PlayerInventory.get_equipped_rod()
@@ -743,6 +775,13 @@ func _on_mash_completed(fill: float) -> void:
 	if _boss_rage_remaining > 0:
 		_boss_rage_remaining -= 1
 		_hud.show_status("😡 BOSS NỔI ĐIÊN! Thêm %d vòng!" % (_boss_rage_remaining + 1), 2.0, Color.RED)
+		
+		# Thu cần lại gần một khoảng sau mỗi hiệp
+		if _pull_per_cycle > 0:
+			var tw = create_tween()
+			tw.tween_property(float_node, "position:x", float_node.position.x - _pull_per_cycle, 0.4)\
+				.set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_QUAD)
+				
 		await get_tree().create_timer(0.5).timeout
 		_start_phase3()  ## Lặp lại Phase 3+4
 	else:
@@ -795,7 +834,7 @@ func _show_result() -> void:
 	## Pearl cho Perfect Strike (vùng Đỏ)
 	if _quality_multiplier >= 2.0:
 		GameManager.add_currency("pearl", 1)
-		print("[FishingController] PERFECT STRIKE! +1 Ngọc Trai")
+		print("[FishingController] CÚ GIẬT HOÀN HẢO! +1 Ngọc Trai")
 		
 	## Rớt Đá Cường Hóa (15%)
 	if randf() <= 0.15:
@@ -913,7 +952,7 @@ func _reset_to_idle() -> void:
 	tween.set_parallel(true)
 	tween.tween_property(rod_visual, "rotation", 0.35, 0.3)
 	tween.tween_property(float_node, "position", rod_visual.transform * tip_marker.position, 0.3)
-	## Đảm bảo cần thẳng lại
+	## Đảm bảo cần thẳng lại nhưng vẫn có độ cong nhẹ tự nhiên
 	if rod_visual.has_method("set_bend"):
-		rod_visual.set_bend(0.0)
+		rod_visual.set_bend(0.4)
 	tween.chain().tween_callback(func(): _set_state(Phase1State.IDLE))

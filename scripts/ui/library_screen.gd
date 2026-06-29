@@ -57,11 +57,18 @@ func _build_ui() -> void:
 	
 	vbox_main.add_child(HSeparator.new())
 	
-	# --- SCROLL AREA ---
+	# --- TABS ---
+	var tabs = TabContainer.new()
+	tabs.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	tabs.tab_alignment = TabBar.ALIGNMENT_CENTER
+	tabs.add_theme_font_size_override("font_size", 24)
+	vbox_main.add_child(tabs)
+	
+	# --- TAB 1: DANH SÁCH CÁ ---
 	var scroll = ScrollContainer.new()
-	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	scroll.name = "Danh Sách Cá"
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	vbox_main.add_child(scroll)
+	tabs.add_child(scroll)
 	
 	_grid = GridContainer.new()
 	_grid.columns = 3 # Hiển thị 3 cột
@@ -69,6 +76,19 @@ func _build_ui() -> void:
 	_grid.add_theme_constant_override("v_separation", 20)
 	_grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	scroll.add_child(_grid)
+	
+	# --- TAB 2: TỈ LỆ MỒI CÂU ---
+	var scroll_bait = ScrollContainer.new()
+	scroll_bait.name = "Tỉ Lệ Mồi Câu"
+	scroll_bait.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	tabs.add_child(scroll_bait)
+	
+	var bait_vbox = VBoxContainer.new()
+	bait_vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	bait_vbox.add_theme_constant_override("separation", 20)
+	scroll_bait.add_child(bait_vbox)
+	
+	_build_bait_rates_tab(bait_vbox)
 	
 	vbox_main.add_child(HSeparator.new())
 	
@@ -101,14 +121,14 @@ func _populate_library() -> void:
 	# Lấy danh sách ID cá từ Database
 	var all_ids = FishDatabase.get_all_fish_ids()
 	
-	# Sắp xếp danh sách theo Rank giảm dần (SSS -> SS -> S -> A -> B -> C)
+	# Sắp xếp danh sách theo Rank tăng dần (C -> B -> A -> S -> SS -> SSS)
 	var rank_order = {"C": 0, "B": 1, "A": 2, "S": 3, "SS": 4, "SSS": 5}
 	all_ids.sort_custom(func(a, b):
 		var fish_a = FishDatabase.get_fish(a)
 		var fish_b = FishDatabase.get_fish(b)
 		var rank_a = fish_a.rank if fish_a is FishData else fish_a.get("rank", "C")
 		var rank_b = fish_b.rank if fish_b is FishData else fish_b.get("rank", "C")
-		return rank_order.get(rank_a, 0) > rank_order.get(rank_b, 0) # Sắp xếp giảm dần
+		return rank_order.get(rank_a, 0) < rank_order.get(rank_b, 0) # Sắp xếp tăng dần
 	)
 	
 	for fid in all_ids:
@@ -189,5 +209,58 @@ func _create_fish_card(fish, fid: String, is_caught: bool) -> PanelContainer:
 	return card
 
 func _on_close_pressed() -> void:
+	AudioManager.play_sfx("ui_click")
 	closed.emit()
 	queue_free()
+
+func _build_bait_rates_tab(parent: VBoxContainer) -> void:
+	var baits = [
+		{"name": "Mồi Miễn Phí", "key": "free"},
+		{"name": "Mồi Thường", "key": "C"},
+		{"name": "Mồi Sống", "key": "live"},
+		{"name": "Mồi Phát Sáng", "key": "glow"}
+	]
+	
+	# Lấy hàm get_rank_weights bằng cách giả lập FishDatabase (hoặc gọi từ class)
+	var weights_func = FishDatabase.call("_get_rank_weights", "free")
+	
+	for b in baits:
+		var panel = PanelContainer.new()
+		var style = StyleBoxFlat.new()
+		style.bg_color = Color(0.15, 0.2, 0.25, 1.0)
+		style.set_corner_radius_all(10)
+		style.set_border_width_all(2)
+		style.border_color = Color(0.4, 0.6, 0.8)
+		panel.add_theme_stylebox_override("panel", style)
+		panel.custom_minimum_size = Vector2(900, 100)
+		parent.add_child(panel)
+		
+		var m = MarginContainer.new()
+		m.add_theme_constant_override("margin_left", 20)
+		m.add_theme_constant_override("margin_right", 20)
+		m.add_theme_constant_override("margin_top", 10)
+		m.add_theme_constant_override("margin_bottom", 10)
+		panel.add_child(m)
+		
+		var v = VBoxContainer.new()
+		m.add_child(v)
+		
+		var header = Label.new()
+		header.text = "🎣 " + b["name"]
+		header.add_theme_font_size_override("font_size", 24)
+		header.add_theme_color_override("font_color", Color(1.0, 0.8, 0.3))
+		v.add_child(header)
+		
+		var rate_dict: Dictionary = FishDatabase.call("_get_rank_weights", b["key"])
+		var rate_str = ""
+		var ranks = ["C", "B", "A", "S", "SS", "SSS"]
+		for r in ranks:
+			var val = rate_dict.get(r, 0.0)
+			if val > 0:
+				rate_str += "[%s: %.2f%%]   " % [r, val]
+				
+		var rate_lbl = Label.new()
+		rate_lbl.text = rate_str
+		rate_lbl.add_theme_font_size_override("font_size", 20)
+		rate_lbl.add_theme_color_override("font_color", Color.WHITE)
+		v.add_child(rate_lbl)

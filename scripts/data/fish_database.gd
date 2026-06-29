@@ -132,8 +132,8 @@ func _get_rank_weights(bait_tier: String) -> Dictionary:
 	match bait_tier:
 		"free": return {"C": 80.0, "B": 18.0, "A": 1.9,  "S": 0.1,  "SS": 0.0}
 		"C":    return {"C": 50.0, "B": 40.0, "A": 9.0,  "S": 1.0,  "SS": 0.0}
-		"live": return {"C": 20.0, "B": 40.0, "A": 34.5, "S": 5.0,  "SS": 0.5}
-		"glow": return {"C": 0.0,  "B": 15.0, "A": 20.0, "S": 10.0, "SS": 5.0, "SSS": 50.0}
+		"live": return {"C": 20.0, "B": 40.0, "A": 34.45, "S": 5.0,  "SS": 0.5, "SSS": 0.05}
+		"glow": return {"C": 0.0,  "B": 15.0, "A": 20.0, "S": 14.0, "SS": 1.0, "SSS": 50.0}
 		_:      return {"C": 100.0}
 
 
@@ -167,12 +167,12 @@ func _load_placeholder_fish() -> void:
 		{"id": "cua_vua",   "name": "Cua Vua Đột Biến",  "rank": "S",  "weight_min": 80.0,  "weight_max": 200.0,  "gold_value": 3500,  "exp_value": 900,  "is_boss": true,  "display_icon": "🦀", "attracted_by_live_bait_rank": "A"},
 		
 		# Rank SS
-		{"id": "thuy_quai", "name": "Thủy Quái Cổ Đại",  "rank": "SS", "weight_min": 800.0, "weight_max": 4500.0, "gold_value": 20000, "exp_value": 5000, "is_boss": true,  "display_icon": "🦕", "attracted_by_live_bait_rank": "S"},
-		{"id": "kraken",    "name": "Mực Ma Kraken",     "rank": "SS", "weight_min": 1000.0,"weight_max": 6000.0, "gold_value": 25000, "exp_value": 6000, "is_boss": true,  "display_icon": "🐙", "attracted_by_live_bait_rank": "S"},
-		{"id": "rong_bien", "name": "Rồng Biển",         "rank": "SS", "weight_min": 500.0, "weight_max": 3000.0, "gold_value": 30000, "exp_value": 7500, "is_boss": true,  "display_icon": "🐉", "attracted_by_live_bait_rank": "S"},
+		{"id": "thuy_quai", "name": "Thủy Quái Cổ Đại",  "rank": "SS", "weight_min": 800.0, "weight_max": 4500.0, "gold_value": 20000, "exp_value": 5000, "is_boss": true, "boss_rage_cycles": 4, "display_icon": "🦕", "attracted_by_live_bait_rank": "S"},
+		{"id": "kraken",    "name": "Mực Ma Kraken",     "rank": "SS", "weight_min": 1000.0,"weight_max": 6000.0, "gold_value": 25000, "exp_value": 6000, "is_boss": true, "boss_rage_cycles": 4, "display_icon": "🐙", "attracted_by_live_bait_rank": "S"},
+		{"id": "rong_bien", "name": "Rồng Biển",         "rank": "SS", "weight_min": 500.0, "weight_max": 3000.0, "gold_value": 30000, "exp_value": 7500, "is_boss": true, "boss_rage_cycles": 4, "display_icon": "🐉", "attracted_by_live_bait_rank": "S"},
 		
 		# Rank SSS
-		{"id": "leviathan", "name": "Leviathan Hủy Diệt", "rank": "SSS", "weight_min": 5000.0, "weight_max": 20000.0, "gold_value": 100000, "exp_value": 25000, "is_boss": true, "display_icon": "🐲", "attracted_by_live_bait_rank": "SS"},
+		{"id": "leviathan", "name": "Leviathan Hủy Diệt", "rank": "SSS", "weight_min": 5000.0, "weight_max": 20000.0, "gold_value": 100000, "exp_value": 25000, "is_boss": true, "boss_rage_cycles": 5, "display_icon": "🐲", "attracted_by_live_bait_rank": "SS"},
 	]
 
 	for data in placeholder_fish:

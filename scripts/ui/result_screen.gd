@@ -94,7 +94,7 @@ func _populate(
 		_fish_icon_lbl.text = icon
 
 	if _rank_badge:
-		_rank_badge.text = "[ Rank %s ]" % rank
+		_rank_badge.text = "[ Hạng %s ]" % rank
 		_rank_badge.add_theme_color_override("font_color", RANK_COLORS.get(rank, Color.WHITE))
 
 	if _fish_name_lbl:
@@ -182,7 +182,7 @@ func _build_ui() -> void:
 	hbox.add_child(left_vbox)
 
 	_fish_icon_lbl = _add_label(left_vbox, "🐟", 160, Color.WHITE)
-	_rank_badge = _add_label(left_vbox, "[ Rank C ]", 40, Color.WHITE)
+	_rank_badge = _add_label(left_vbox, "[ Hạng C ]", 40, Color.WHITE)
 	_fish_name_lbl = _add_label(left_vbox, "Cá Cơm", 56, Color(0.9, 0.95, 1.0))
 
 	# --- Phân cách dọc ---

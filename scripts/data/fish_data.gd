@@ -15,8 +15,8 @@ extends Resource
 @export var description: String = ""
 @export var display_icon: String = "🐟"
 
-## Độ hiếm: C < B < A < S < SS
-@export_enum("C", "B", "A", "S", "SS") var rank: String = "C"
+## Độ hiếm: C < B < A < S < SS < SSS
+@export_enum("C", "B", "A", "S", "SS", "SSS") var rank: String = "C"
 
 # === CÂN NẶNG ===
 ## Phase 4 button mash fill (0→1) quyết định weight nằm trong range này
@@ -71,6 +71,7 @@ func get_qte_arrow_count() -> int:
 		"A":  return 5
 		"S":  return 6
 		"SS": return 7
+		"SSS": return 9
 	return 3
 
 ## Thời gian cho mỗi mũi tên Phase 3 (giây) — cá hiếm có ít thời gian hơn
@@ -81,6 +82,7 @@ func get_qte_time_per_arrow() -> float:
 		"A":  return 1.8
 		"S":  return 1.5
 		"SS": return 1.2
+		"SSS": return 0.9
 	return 2.0
 
 ## Được dùng trong FishDatabase để nhận diện

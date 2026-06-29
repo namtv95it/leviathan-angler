@@ -143,8 +143,8 @@ func _build_ui() -> void:
 	vbox.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
 	vbox.offset_left = -420
 	vbox.offset_right = 420
-	vbox.offset_top = -320
-	vbox.offset_bottom = -70
+	vbox.offset_top = -370
+	vbox.offset_bottom = -120
 	vbox.add_theme_constant_override("separation", 16)
 	vbox.alignment = BoxContainer.ALIGNMENT_CENTER
 	vbox.mouse_filter = Control.MOUSE_FILTER_IGNORE

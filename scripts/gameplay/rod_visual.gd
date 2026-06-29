@@ -24,9 +24,9 @@ const MAX_BEND_Y := 45.0
 # ─────────────────────────────────────────────
 # VẬT LÝ LÒ XO
 # ─────────────────────────────────────────────
-var _bend: float = 0.0
+var _bend: float = 0.4
 var _bend_velocity: float = 0.0
-var _target_bend: float = 0.0
+var _target_bend: float = 0.4
 
 const SPRING_STIFFNESS := 180.0
 const SPRING_DAMPING   := 8.0
@@ -235,7 +235,7 @@ func _rebuild_points() -> void:
 
 	for i in range(SEGMENTS + 1):
 		var t := float(i) / float(SEGMENTS)
-		var bend_influence := pow(t, 2.2)
+		var bend_influence := pow(t, 3.0) # Đường cong dồn mạnh về phần ngọn
 		var x := _bend * MAX_BEND_X * bend_influence
 		var y := -ROD_LENGTH * t + absf(_bend) * MAX_BEND_Y * bend_influence * 0.4
 		var p := Vector2(x, y)

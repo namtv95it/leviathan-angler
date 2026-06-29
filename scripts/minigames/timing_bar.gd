@@ -15,7 +15,7 @@ signal time_up()
 const SCREEN_W := 1920.0
 const SCREEN_H := 1080.0
 
-const BAR_W := 1000.0
+var _current_bar_w := 1000.0
 const BAR_H := 40.0
 
 # Kích thước từng vùng (từ trái qua phải giống ảnh)
@@ -48,11 +48,24 @@ func _ready() -> void:
 	visible = false
 
 
-func activate(speed_bonus: float = 0.0) -> void:
+func activate(speed_bonus: float = 0.0, rank: String = "C") -> void:
+	match rank:
+		"C": _current_bar_w = 800.0; _base_speed_mult = 0.9
+		"B": _current_bar_w = 900.0; _base_speed_mult = 1.0
+		"A": _current_bar_w = 1000.0; _base_speed_mult = 1.1
+		"S": _current_bar_w = 1150.0; _base_speed_mult = 1.2
+		"SS": _current_bar_w = 1300.0; _base_speed_mult = 1.3
+		"SSS": _current_bar_w = 1500.0; _base_speed_mult = 1.45
+		_: _current_bar_w = 1000.0; _base_speed_mult = 1.0
+	
+	_base_speed_mult += speed_bonus
+	green_px = _current_bar_w - yellow_px - red_px
+	
+	_build_ui()
+	
 	_t = 0.0
 	_dir = 1.0
 	_traversals = 0
-	_base_speed_mult = 1.0 + speed_bonus
 	_speed_mult = _base_speed_mult
 	
 	if _chuan_xac_label:
@@ -113,7 +126,7 @@ func trigger_action() -> void:
 
 
 func _check_zone() -> String:
-	var px = _t * BAR_W
+	var px = _t * _current_bar_w
 	if px <= green_px:
 		return "green"
 	elif px <= green_px + yellow_px:
@@ -124,7 +137,7 @@ func _check_zone() -> String:
 
 func _update_pointer_pos() -> void:
 	if _pointer:
-		_pointer.position.x = _t * BAR_W - (_pointer.size.x * 0.5)
+		_pointer.position.x = _t * _current_bar_w - (_pointer.size.x * 0.5)
 
 
 func _update_rounds_label() -> void:
@@ -137,6 +150,9 @@ func _update_rounds_label() -> void:
 # XÂY DỰNG UI
 # =============================================
 func _build_ui() -> void:
+	for child in get_children():
+		child.queue_free()
+		
 	var root := Control.new()
 	root.name = "Root"
 	root.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -146,8 +162,8 @@ func _build_ui() -> void:
 	# --- VBox Container (nằm ở top center) ---
 	var vbox := VBoxContainer.new()
 	vbox.set_anchors_preset(Control.PRESET_CENTER_TOP)
-	vbox.offset_left = -BAR_W / 2
-	vbox.offset_right = BAR_W / 2
+	vbox.offset_left = -_current_bar_w / 2
+	vbox.offset_right = _current_bar_w / 2
 	vbox.offset_top = 220
 	vbox.offset_bottom = 420
 	vbox.add_theme_constant_override("separation", 10)
@@ -167,7 +183,7 @@ func _build_ui() -> void:
 	# --- Bar container ---
 	var bar_host := Control.new()
 	bar_host.name = "BarContainer"
-	bar_host.custom_minimum_size = Vector2(BAR_W, BAR_H + 40.0)
+	bar_host.custom_minimum_size = Vector2(_current_bar_w, BAR_H + 40.0)
 	bar_host.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	vbox.add_child(bar_host)
 
@@ -177,14 +193,14 @@ func _build_ui() -> void:
 func _build_bar(host: Control) -> void:
 	# Khung bao (viền đồng/vàng)
 	var frame := ColorRect.new()
-	frame.size = Vector2(BAR_W + 8, BAR_H + 8)
+	frame.size = Vector2(_current_bar_w + 8, BAR_H + 8)
 	frame.position = Vector2(-4, -4 + 10)
 	frame.color = Color(0.8, 0.7, 0.3)
 	host.add_child(frame)
 	
 	var bar_bg = ColorRect.new()
 	bar_bg.name = "BarBg"
-	bar_bg.size = Vector2(BAR_W, BAR_H)
+	bar_bg.size = Vector2(_current_bar_w, BAR_H)
 	bar_bg.position = Vector2(0, 10)
 	bar_bg.color = Color(0.1, 0.1, 0.1)
 	host.add_child(bar_bg)
