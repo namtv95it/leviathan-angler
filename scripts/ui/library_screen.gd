@@ -101,14 +101,14 @@ func _populate_library() -> void:
 	# Lấy danh sách ID cá từ Database
 	var all_ids = FishDatabase.get_all_fish_ids()
 	
-	# Sắp xếp danh sách theo Rank (C -> B -> A -> S -> SS -> SSS)
+	# Sắp xếp danh sách theo Rank giảm dần (SSS -> SS -> S -> A -> B -> C)
 	var rank_order = {"C": 0, "B": 1, "A": 2, "S": 3, "SS": 4, "SSS": 5}
 	all_ids.sort_custom(func(a, b):
 		var fish_a = FishDatabase.get_fish(a)
 		var fish_b = FishDatabase.get_fish(b)
 		var rank_a = fish_a.rank if fish_a is FishData else fish_a.get("rank", "C")
 		var rank_b = fish_b.rank if fish_b is FishData else fish_b.get("rank", "C")
-		return rank_order.get(rank_a, 0) < rank_order.get(rank_b, 0)
+		return rank_order.get(rank_a, 0) > rank_order.get(rank_b, 0) # Sắp xếp giảm dần
 	)
 	
 	for fid in all_ids:

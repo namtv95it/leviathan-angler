@@ -656,6 +656,7 @@ func _start_phase3() -> void:
 			"A":  arrow_count = 5; time_per_arrow = 1.8
 			"S":  arrow_count = 6; time_per_arrow = 1.5
 			"SS": arrow_count = 7; time_per_arrow = 1.2
+			"SSS": arrow_count = 9; time_per_arrow = 0.9
 
 	## Áp dụng Flexibility bonus từ cần câu
 	var rod: RodData = PlayerInventory.get_equipped_rod()
@@ -710,10 +711,26 @@ func _start_phase4() -> void:
 	var stamina_lv = GameManager.player_data.get("character_stats", {}).get("stamina_lv", 0)
 	power_bonus += stamina_lv * 0.25 # Mỗi cấp Thể lực tăng 25% lực spam
 
+	## Tính toán độ khó dựa trên Rank cá
+	var fish_data = _current_shadow.get_fish_data() if _current_shadow else null
+	var rank = "C"
+	if fish_data is FishData:
+		rank = fish_data.rank
+	elif fish_data is Dictionary:
+		rank = fish_data.get("rank", "C")
+		
+	var diff_mult = 1.0
+	match rank:
+		"B": diff_mult = 1.1
+		"A": diff_mult = 1.25
+		"S": diff_mult = 1.45
+		"SS": diff_mult = 1.7
+		"SSS": diff_mult = 2.0
+
 	_mash_btn = MashButton.new()
 	add_child(_mash_btn)
 	_mash_btn.completed.connect(_on_mash_completed)
-	_mash_btn.activate(4.0, power_bonus)
+	_mash_btn.activate(4.0, power_bonus, diff_mult)
 
 
 func _on_mash_completed(fill: float) -> void:

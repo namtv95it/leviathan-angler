@@ -24,6 +24,7 @@ var _duration: float = 4.0
 var _active: bool = false
 var _tap_count: int = 0
 var _fill_per_tap: float = FILL_PER_TAP
+var _current_decay: float = FILL_DECAY
 
 # === NODES ===
 var _energy_fill: ColorRect
@@ -40,9 +41,10 @@ func _ready() -> void:
 	visible = false
 
 
-func activate(duration: float = 4.0, power_bonus: float = 0.0) -> void:
+func activate(duration: float = 4.0, power_bonus: float = 0.0, difficulty_mult: float = 1.0) -> void:
 	_duration     = duration
-	_fill_per_tap = FILL_PER_TAP * (1.0 + power_bonus)
+	_fill_per_tap = (FILL_PER_TAP * (1.0 + power_bonus)) / difficulty_mult
+	_current_decay = FILL_DECAY * difficulty_mult
 	_timer     = duration
 	_fill      = 0.0
 	_tap_count = 0
@@ -63,7 +65,7 @@ func _process(delta: float) -> void:
 		return
 
 	_timer -= delta
-	_fill = maxf(0.0, _fill - FILL_DECAY * delta)
+	_fill = maxf(0.0, _fill - _current_decay * delta)
 	_update_visuals()
 
 	if _timer <= 0.0:
