@@ -8,6 +8,8 @@ extends Node2D
 
 ## Phát khi bóng cá chạm đến phao
 signal reached_float
+signal fake_bite
+signal real_bite_warning
 
 # Tốc độ bơi (pixel/giây) — cá hiếm bơi nhanh hơn để gây bất ngờ
 const SPEED_BY_RANK := {
@@ -16,6 +18,7 @@ const SPEED_BY_RANK := {
 	"A":  150.0,
 	"S":  190.0,
 	"SS": 230.0,
+	"SSS": 280.0,
 }
 
 # Kích thước bóng theo rank (width, height)
@@ -25,6 +28,7 @@ const SIZE_BY_RANK := {
 	"A":  Vector2(120, 40),
 	"S":  Vector2(170, 55),
 	"SS": Vector2(240, 75),
+	"SSS": Vector2(400, 120),
 }
 
 # Màu bóng theo rank (càng hiếm càng đậm/sáng hơn)
@@ -34,6 +38,7 @@ const COLOR_BY_RANK := {
 	"A":  Color(0.0,  0.05, 0.15, 0.38),
 	"S":  Color(0.05, 0.0,  0.15, 0.50),
 	"SS": Color(0.15, 0.0,  0.05, 0.65),
+	"SSS": Color(0.25, 0.0,  0.0, 0.85),
 }
 
 ## _fish_data: FishData Resource hoặc Dictionary (placeholder)
@@ -43,6 +48,10 @@ var _speed: float = 200.0
 var _target_pos: Vector2 = Vector2.ZERO
 var _moving: bool = false
 var _wobble_time: float = 0.0
+var _is_struggling: bool = false
+
+func set_struggling(active: bool) -> void:
+	_is_struggling = active
 
 @onready var shadow_sprite  := $ShadowSprite
 @onready var size_indicator := $SizeIndicator
@@ -94,10 +103,11 @@ func setup(fish_data, bait_data: Dictionary, target_pos: Vector2 = Vector2.ZERO)
 
 
 func _process(delta: float) -> void:
+	_wobble_time += delta
+	queue_redraw() # Đảm bảo cá luôn vẫy đuôi ngay cả khi đứng yên
+
 	if not _moving:
 		return
-
-	_wobble_time += delta
 
 	## Di chuyển về phía phao và quay đầu cá theo hướng bơi
 	var direction := (_target_pos - global_position).normalized()
@@ -106,12 +116,21 @@ func _process(delta: float) -> void:
 
 	## Hiệu ứng bơi: nhấp nhô lên xuống nhẹ
 	global_position.y += sin(_wobble_time * 4.0) * 1.5
-	queue_redraw()
 
-	## Kiểm tra đã đến phao chưa (trong vòng 30px)
-	if global_position.distance_to(_target_pos) < 30.0:
+	## Kiểm tra đã đến phao chưa (Tính theo vị trí chóp mũi)
+	var rank: String = _get_rank()
+	var size = SIZE_BY_RANK.get(rank, Vector2(50, 18))
+	var head_pos = global_position + direction * (size.x * 0.45) # Giữa 0.5 và 0.4
+	
+	if head_pos.distance_to(_target_pos) < 20.0: # Giữa 30.0 và 10.0
 		_moving = false
 		_on_reached_float()
+
+func follow_float(float_pos: Vector2) -> void:
+	var rank: String = _get_rank()
+	var size = SIZE_BY_RANK.get(rank, Vector2(50, 18))
+	var direction = Vector2.RIGHT.rotated(rotation)
+	global_position = float_pos - direction * (size.x * 0.45)
 
 func _draw() -> void:
 	var rank: String = _get_rank()
@@ -119,42 +138,93 @@ func _draw() -> void:
 	var color = COLOR_BY_RANK.get(rank, Color(0.0, 0.0, 0.0, 0.4))
 	
 	# Biên độ vẫy đuôi phụ thuộc vào rank và tốc độ
-	var tail_wobble = sin(_wobble_time * 15.0) * (size.y * 0.35)
+	var wobble_speed = 40.0 if _is_struggling else 15.0
+	var wobble_amp = size.y * 0.8 if _is_struggling else size.y * 0.35
+	var tail_wobble = sin(_wobble_time * wobble_speed) * wobble_amp
 	
-	# 1. Vẽ thân cá (Fish Body)
+	# 1. Vẽ thân cá dạng giọt nước (Teardrop shape) - Không vây, không đuôi
 	var body_pts = PackedVector2Array()
-	var segments = 16
+	var segments = 24 # Tăng số điểm để đường cong mượt hơn
 	for i in range(segments + 1):
 		var t = float(i) / float(segments) * TAU
 		var x = cos(t) * (size.x / 2.0)
 		var y = sin(t) * (size.y / 2.0)
 		
-		# Vuốt nhọn phần đuôi (nửa bên trái x < 0)
 		if x < 0:
-			y *= (1.0 + (x / (size.x / 2.0)) * 0.5)
+			# Vuốt nhọn phần đuôi: khi x càng âm, y càng thu nhỏ về 0
+			var ratio = abs(x) / (size.x / 2.0)
+			y *= (1.0 - pow(ratio, 1.2)) # Dùng hàm mũ để tạo độ cong tự nhiên
+		else:
+			# Làm phần đầu (x > 0) tròn và mập hơn
+			y *= 1.25
 			
-		body_pts.append(Vector2(x, y))
+		# Áp dụng hiệu ứng uốn éo đuôi (chỉ uốn phần đuôi x < 0)
+		var local_wobble = 0.0
+		if x < 0:
+			local_wobble = tail_wobble * pow(abs(x) / (size.x / 2.0), 1.5)
+			
+		body_pts.append(Vector2(x, y + local_wobble))
 		
 	draw_polygon(body_pts, PackedColorArray([color]))
-	
-	# 2. Vẽ đuôi cá (Fish Tail)
-	var tail_pts = PackedVector2Array()
-	var tail_x = -size.x / 2.0 + 5.0
-	tail_pts.append(Vector2(tail_x, 0))
-	tail_pts.append(Vector2(tail_x - size.x * 0.25, -size.y * 0.6 + tail_wobble))
-	tail_pts.append(Vector2(tail_x - size.x * 0.15, tail_wobble * 0.5))
-	tail_pts.append(Vector2(tail_x - size.x * 0.25, size.y * 0.6 + tail_wobble))
-	
-	draw_polygon(tail_pts, PackedColorArray([color]))
 
 
 func _on_reached_float() -> void:
-	## Hiệu ứng rung khi cá cắn câu
-	var tween := create_tween()
-	tween.tween_property(self, "position:x", position.x - 15, 0.05)
-	tween.tween_property(self, "position:x", position.x + 15, 0.05)
-	tween.tween_property(self, "position:x", position.x,      0.05)
-	tween.tween_callback(func(): reached_float.emit())
+	## Hiệu ứng Play Together: Cá bơi tới, nhấp giả vài lần rồi mới cắn thật
+	var rank = _get_rank()
+	var num_fake_bites = 1
+	match rank:
+		"C": num_fake_bites = randi_range(1, 2)
+		"B": num_fake_bites = randi_range(2, 3)
+		"A": num_fake_bites = randi_range(3, 4)
+		"S": num_fake_bites = randi_range(4, 5)
+		"SS": num_fake_bites = randi_range(5, 6)
+		"SSS": num_fake_bites = randi_range(6, 8)
+		_: num_fake_bites = randi_range(1, 3)
+		
+	_play_next_bite(num_fake_bites)
+
+func _play_next_bite(remaining_fake_bites: int) -> void:
+	var rank = _get_rank()
+	var size = SIZE_BY_RANK.get(rank, Vector2(50, 18))
+	var forward = Vector2.RIGHT.rotated(rotation)
+	var back_dist = size.x * 0.6 # Lùi lại một đoạn bằng 60% chiều dài thân cá
+	var original_pos = global_position
+	
+	if remaining_fake_bites > 0:
+		# Random thời gian rình mồi
+		var wait_time = randf_range(0.3, 0.8)
+		await get_tree().create_timer(wait_time).timeout
+		
+		# Random cường độ nhấp để không bị lặp lại cứng ngắc
+		var random_back_dist = back_dist * randf_range(0.7, 1.2)
+		var back_time = randf_range(0.3, 0.45) # Lùi từ từ
+		var dash_time = randf_range(0.12, 0.16) # Lao lên có thể nhìn thấy được
+		
+		var tween = create_tween()
+		tween.tween_property(self, "global_position", original_pos - forward * random_back_dist, back_time).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_SINE)
+		tween.tween_property(self, "global_position", original_pos, dash_time).set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_QUAD)
+		
+		# Báo cho controller biết để phao nhấp khi cá lao tới chạm phao
+		tween.tween_callback(func(): fake_bite.emit())
+		tween.tween_callback(func(): _play_next_bite(remaining_fake_bites - 1))
+	else:
+		# Cú cắn thật (Real bite)
+		var wait_time = randf_range(0.4, 0.9)
+		await get_tree().create_timer(wait_time).timeout
+		
+		var final_back_dist = back_dist * randf_range(1.3, 1.6)
+		var back_time = randf_range(0.4, 0.55)
+		var dash_time = randf_range(0.08, 0.12) # Nhanh hơn nhấp giả nhưng vẫn mượt
+		
+		var tween = create_tween()
+		# Lùi lại sâu hơn một chút để lấy đà
+		tween.tween_property(self, "global_position", original_pos - forward * final_back_dist, back_time).set_ease(Tween.EASE_IN_OUT).set_trans(Tween.TRANS_SINE)
+		# Hiện chấm than (!) ngay lúc bắt đầu lao tới
+		tween.tween_callback(func(): real_bite_warning.emit())
+		# Lao nhanh vào cắn thật sự
+		tween.tween_property(self, "global_position", original_pos, dash_time).set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_CUBIC)
+		
+		tween.tween_callback(func(): reached_float.emit())
 
 
 ## Trả về dữ liệu cá (FishData Resource hoặc Dictionary)

@@ -47,6 +47,8 @@ var _quality_multiplier: float = 1.0
 var _mash_fill: float = 0.0
 ## Số lần boss rage còn lại
 var _boss_rage_remaining: int = 0
+## Đang trong giai đoạn giằng co
+var _is_struggling: bool = false
 ## HUD overlay
 var _hud: HUD = null
 
@@ -88,7 +90,9 @@ func _ready() -> void:
 	add_child(dynamic_bg)
 	move_child(dynamic_bg, 0)
 
-	_select_bait_free()
+	var last_bait = GameManager.player_data.get("selected_bait", "bait_free")
+	_on_bait_chosen(last_bait)
+	
 	_update_rod_visual()
 	
 	## Khởi tạo các điểm cho dây cước (20 đoạn)
@@ -165,6 +169,19 @@ func _process(delta: float) -> void:
 			_process_waiting(delta)
 		Phase1State.BITE_WINDOW:
 			pass  ## Timing Bar tự xử lý qua _process nội bộ
+			
+	if _is_struggling:
+		# Kéo phao lùi về sau (drift dần về bên phải + rung lắc mạnh)
+		float_node.position.x += 15.0 * delta # Trôi dần về sau
+		float_node.position.y += randf_range(-6.0, 6.0) # Rung lắc ngang dọc
+		float_node.position.x += randf_range(-3.0, 3.0)
+		
+		# Bóng cá bám theo phao trong lúc giằng co
+		if is_instance_valid(_current_shadow):
+			if _current_shadow.has_method("follow_float"):
+				_current_shadow.follow_float(float_node.global_position)
+			else:
+				_current_shadow.global_position = float_node.global_position
 	
 	if _auto_fishing:
 		_handle_auto_fishing(delta)
@@ -223,6 +240,7 @@ func _on_hud_open_bait_selection() -> void:
 	add_child(bait_screen)
 
 func _on_bait_chosen(bait_id: String) -> void:
+	GameManager.player_data["selected_bait"] = bait_id
 	if bait_id == "bait_free":
 		_select_bait_free()
 	elif bait_id == "bait_lure_c":
@@ -231,6 +249,8 @@ func _on_bait_chosen(bait_id: String) -> void:
 		_select_bait_live()
 	elif bait_id == "bait_glow":
 		_select_bait_glow()
+	
+	SaveManager.save_game()
 
 
 func _on_hud_change_rod() -> void:
@@ -480,7 +500,7 @@ func _process_waiting(delta: float) -> void:
 
 
 func _spawn_fish_shadow() -> void:
-	var fish_data = FishDatabase.get_random_fish_for_bait(_selected_bait.get("tier", "free"))
+	var fish_data = FishDatabase.get_random_fish_for_bait(_selected_bait.get("tier", "free"), _auto_fishing)
 	if fish_data == null:
 		push_warning("[FishingController] Không tìm được dữ liệu cá!")
 		_reset_to_idle()
@@ -500,10 +520,34 @@ func _spawn_fish_shadow() -> void:
 	shadow_layer.add_child(shadow)
 	shadow.setup(fish_data, _selected_bait, float_node.global_position)
 	shadow.reached_float.connect(_on_shadow_reached_float)
+	shadow.fake_bite.connect(_on_shadow_fake_bite)
+	shadow.real_bite_warning.connect(_on_shadow_real_bite_warning)
 	_current_shadow = shadow
 
 	_set_state(Phase1State.SHADOW_COMING)
 	EventBus.fish_shadow_appeared.emit(fish_data)
+
+
+func _on_shadow_fake_bite() -> void:
+	AudioManager.play_sfx("ui_click") # Tạm dùng ui_click làm âm thanh nhấp nhả
+	var tween = create_tween()
+	tween.tween_property(float_node, "position:y", float_node.position.y + 15, 0.05)
+	tween.tween_property(float_node, "position:y", float_node.position.y - 15, 0.1)
+
+func _on_shadow_real_bite_warning() -> void:
+	var excl = Label.new()
+	excl.text = "!"
+	excl.add_theme_font_size_override("font_size", 48)
+	excl.add_theme_color_override("font_color", Color.RED)
+	excl.add_theme_color_override("font_outline_color", Color.WHITE)
+	excl.add_theme_constant_override("outline_size", 4)
+	excl.position = Vector2(-10, -60)
+	float_node.add_child(excl)
+	
+	var tw = create_tween()
+	tw.tween_property(excl, "position:y", -80, 0.15).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
+	tw.tween_property(excl, "modulate:a", 0.0, 0.15).set_delay(0.5)
+	tw.tween_callback(excl.queue_free)
 
 
 # =============================================
@@ -590,6 +634,10 @@ func _on_timing_time_up() -> void:
 # PHASE 3: QTE SWIPE MŨI TÊN
 # =============================================
 func _start_phase3() -> void:
+	_is_struggling = true
+	if is_instance_valid(_current_shadow) and _current_shadow.has_method("set_struggling"):
+		_current_shadow.set_struggling(true)
+		
 	if _auto_fishing: _auto_timer = 1.0
 	_hud.set_action_visible(false) # Tạm ẩn nút kéo ở Phase vuốt
 	_hud.show_status("", 0) # Xoá thông báo PERFECT/GOOD từ Phase 2 để tránh đè chữ "GIẰNG CO"
@@ -702,13 +750,17 @@ func _show_result() -> void:
 	var exp_amt := 5
 
 	if fish_data is FishData:
-		weight  = fish_data.calculate_weight(_mash_fill)
+		weight  = fish_data.calculate_weight(_mash_fill, _auto_fishing)
+		
 		gold    = fish_data.calculate_gold(weight, _quality_multiplier)
 		exp_amt = fish_data.calculate_exp(weight, _quality_multiplier)
 	elif fish_data is Dictionary:
 		var w_min: float = fish_data.get("weight_min", 0.1)
 		var w_max: float = fish_data.get("weight_max", 1.0)
-		weight  = randf_range(w_min, w_max)
+		var r = randf()
+		if _auto_fishing: r = pow(r, 1.5)
+		weight  = lerpf(w_min, w_max, r)
+		
 		var ratio: float = (weight - w_min) / maxf(w_max - w_min, 0.001)
 		gold    = int(fish_data.get("gold_value", 10) * (0.5 + ratio * 0.5) * _quality_multiplier)
 		exp_amt = int(fish_data.get("exp_value", 5)  * (0.5 + ratio * 0.5) * _quality_multiplier)
@@ -750,6 +802,7 @@ func _show_result() -> void:
 
 
 func _on_result_closed() -> void:
+	_is_struggling = false
 	_cleanup_node(_result_screen)
 	_result_screen = null
 	_reset_to_idle()
@@ -814,7 +867,8 @@ func _cleanup_node(node: Node) -> void:
 
 
 func _cleanup_shadow() -> void:
-	if _current_shadow and is_instance_valid(_current_shadow):
+	_is_struggling = false
+	if is_instance_valid(_current_shadow):
 		_current_shadow.queue_free()
 	_current_shadow = null
 

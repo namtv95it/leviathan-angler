@@ -101,8 +101,8 @@ func _populate_library() -> void:
 	# Lấy danh sách ID cá từ Database
 	var all_ids = FishDatabase.get_all_fish_ids()
 	
-	# Sắp xếp danh sách theo Rank (C -> B -> A -> S -> SS)
-	var rank_order = {"C": 0, "B": 1, "A": 2, "S": 3, "SS": 4}
+	# Sắp xếp danh sách theo Rank (C -> B -> A -> S -> SS -> SSS)
+	var rank_order = {"C": 0, "B": 1, "A": 2, "S": 3, "SS": 4, "SSS": 5}
 	all_ids.sort_custom(func(a, b):
 		var fish_a = FishDatabase.get_fish(a)
 		var fish_b = FishDatabase.get_fish(b)
@@ -136,6 +136,7 @@ func _create_fish_card(fish, fid: String, is_caught: bool) -> PanelContainer:
 			"A": style.border_color = Color.CYAN
 			"S": style.border_color = Color.ORANGE
 			"SS": style.border_color = Color.RED
+			"SSS": style.border_color = Color(0.8, 0.0, 1.0) # Tím/Hồng cho SSS
 	else:
 		style.border_color = Color(0.3, 0.3, 0.3)
 		style.bg_color = Color(0.1, 0.1, 0.1)
