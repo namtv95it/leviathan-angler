@@ -45,6 +45,8 @@ var _result_screen: ResultScreen = null
 var _quality_multiplier: float = 1.0
 ## % fill từ button mash (Phase 4), 0.0 → 1.0
 var _mash_fill: float = 0.0
+## Phạt cân nặng nếu giảm rank vượt quá mốc C (25% mỗi rank)
+var _weight_penalty: float = 0.0
 ## Số lần boss rage còn lại
 var _boss_rage_remaining: int = 0
 ## Khoảng cách kéo phao lại sau mỗi vòng giằng co
@@ -607,18 +609,21 @@ func _on_timing_zone(zone: String) -> void:
 
 	EventBus.timing_result.emit(zone)
 	AudioManager.play_sfx("timing_hit")
+	_weight_penalty = 0.0
 
 	match zone:
 		"green":
 			## Câu cá ngay, chất lượng Thường
 			_quality_multiplier = 1.0
 			_mash_fill          = 0.55   ## Cân trung bình, không qua Phase 3+4
-			_hud.show_status("✓ Vùng Xanh — Câu được cá!", 2.0, Color.GREEN)
+			_downgrade_fish(2)
+			_hud.show_status("✓ Vùng Xanh — Lên cá luôn! (Bị giảm 2 Rank)", 2.0, Color.GREEN)
 			_show_result()
 		"yellow":
 			## Kích hoạt Phase 3+4, chất lượng Tốt
 			_quality_multiplier = 1.5
-			_hud.show_status("⭐ Vùng Vàng — Giằng co nào!", 2.0, Color.YELLOW)
+			_downgrade_fish(1)
+			_hud.show_status("⭐ Vùng Vàng — Giằng co! (Bị giảm 1 Rank)", 2.0, Color.YELLOW)
 			_start_phase3()
 		"red":
 			## Kích hoạt Phase 3+4, chất lượng Hoàn Hảo
@@ -634,6 +639,49 @@ func _on_timing_time_up() -> void:
 	_hud.show_status("Cá sổng! Kéo chậm quá...", 2.0, Color.GRAY)
 	EventBus.fish_escaped.emit()
 	_reset_to_idle()
+
+
+func _downgrade_fish(amount: int) -> void:
+	if not is_instance_valid(_current_shadow): return
+	var current_fish = _current_shadow.get_fish_data()
+	var current_rank = "C"
+	if current_fish is FishData:
+		current_rank = current_fish.rank
+	elif current_fish is Dictionary:
+		current_rank = current_fish.get("rank", "C")
+		
+	var ranks = ["C", "B", "A", "S", "SS", "SSS"]
+	var current_idx = ranks.find(current_rank)
+	if current_idx > 0:
+		var new_idx = current_idx - amount
+		
+		# Nếu tuột quá mức C, chuyển số rank dư thừa thành hình phạt cân nặng
+		if new_idx < 0:
+			_weight_penalty = abs(new_idx) * 0.25
+			new_idx = 0
+			
+		var new_rank = ranks[new_idx]
+		
+		# Tìm một con cá ngẫu nhiên của new_rank
+		var new_fish = null
+		var possible_fishes = FishDatabase.get_fish_by_rank(new_rank)
+		if possible_fishes.size() > 0:
+			new_fish = possible_fishes.pick_random()
+		else:
+			new_fish = {"id": "downgraded_fish", "name": "Cá Giảm Hạng", "rank": new_rank}
+			
+		_current_shadow._fish_data = new_fish
+		
+		# Cập nhật số vòng boss rage
+		var bd = new_fish if new_fish is Dictionary else {}
+		if new_fish is FishData:
+			_boss_rage_remaining = new_fish.boss_rage_cycles
+		else:
+			_boss_rage_remaining = bd.get("boss_rage_cycles", 0)
+			
+		var rod = PlayerInventory.get_equipped_rod()
+		var reduction = rod.get_durability_reduction() if rod else 0
+		_boss_rage_remaining = maxi(0, _boss_rage_remaining - reduction)
 
 
 # =============================================
@@ -826,6 +874,12 @@ func _show_result() -> void:
 		exp_amt = int(exp_amt * 2.0)
 	elif _mash_fill >= 0.80:
 		exp_amt = int(exp_amt * 1.5)
+
+	## Áp dụng hình phạt cân nặng (nếu tuột quá mốc rank C)
+	if _weight_penalty > 0.0:
+		var old_w = weight
+		weight = maxf(0.01, weight * (1.0 - _weight_penalty))
+		print("[FishingController] Bị phạt %.1f%% cân nặng! (%.2f -> %.2f)" % [_weight_penalty * 100, old_w, weight])
 
 	## Trao phần thưởng
 	## (Đã sửa ở Sprint 3: Không cộng Vàng trực tiếp nữa, người chơi phải vào Cửa hàng để bán cá)
