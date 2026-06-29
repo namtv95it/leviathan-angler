@@ -76,6 +76,7 @@ func get_random_fish_for_bait(bait_tier: String, luck_lv: int = 0):
 		elif bait_tier == "B": bait_tier = "A"
 		elif bait_tier == "A": bait_tier = "S"
 		elif bait_tier == "S": bait_tier = "live"
+		elif bait_tier == "live": bait_tier = "glow"
 		
 	var eligible_ranks: Array = _get_eligible_ranks(bait_tier)
 	var eligible_fish: Array = []
@@ -125,6 +126,7 @@ func _get_eligible_ranks(bait_tier: String) -> Array:
 		"A":    return ["A", "S"]
 		"S":    return ["S", "SS"]
 		"live": return ["A", "S", "SS"]
+		"glow": return ["S", "SS"]
 		_:      return ["C"]
 
 

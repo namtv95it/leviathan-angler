@@ -118,6 +118,26 @@ func sell_all_fish() -> int:
 	
 	return total_gold
 
+func sell_fish_by_id(fish_id: String) -> int:
+	var total_gold: int = 0
+	var i = fish_inventory.size() - 1
+	while i >= 0:
+		var f = fish_inventory[i]
+		if f.get("fish_id", "unknown") == fish_id:
+			total_gold += f.get("gold_value", 10)
+			fish_inventory.remove_at(i)
+		i -= 1
+		
+	var haggle_lv = GameManager.player_data.get("character_stats", {}).get("haggling_lv", 0)
+	if haggle_lv > 0 and total_gold > 0:
+		total_gold = int(total_gold * (1.0 + haggle_lv * 0.05))
+		
+	if total_gold > 0:
+		GameManager.add_currency("gold", total_gold)
+		EventBus.inventory_updated.emit()
+		
+	return total_gold
+
 
 func get_fish_count_by_rank(rank: String) -> int:
 	var count = 0

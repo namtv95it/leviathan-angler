@@ -8,9 +8,8 @@ signal inventory_closed()
 var _bg_overlay: ColorRect
 var _panel: PanelContainer
 var _fish_grid: GridContainer
-var _stats_label: Label
-var _bait_label: Label
-var _rod_label: Label
+var _inv_grid: GridContainer
+
 var _close_btn: Button
 
 func _ready() -> void:
@@ -55,77 +54,65 @@ func _build_ui() -> void:
 	margin.add_theme_constant_override("margin_bottom", 40)
 	_panel.add_child(margin)
 	
-	var hbox = HBoxContainer.new()
-	hbox.add_theme_constant_override("separation", 60)
-	margin.add_child(hbox)
+	var vbox_main = VBoxContainer.new()
+	margin.add_child(vbox_main)
+	
+	var tabs = TabContainer.new()
+	tabs.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	tabs.add_theme_font_size_override("font_size", 30)
+	vbox_main.add_child(tabs)
 	
 	# ==============================
-	# CỘT TRÁI: BỘ SƯU TẬP CÁ
+	# TAB 1: BỘ SƯU TẬP CÁ
 	# ==============================
-	var left_vbox = VBoxContainer.new()
-	left_vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	hbox.add_child(left_vbox)
-	
-	var title_left = Label.new()
-	title_left.text = "🐟 BỘ SƯU TẬP CÁ (FISH DEX)"
-	title_left.add_theme_font_size_override("font_size", 40)
-	title_left.add_theme_color_override("font_color", Color.WHITE)
-	title_left.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	left_vbox.add_child(title_left)
-	
-	var hs = HSeparator.new()
-	left_vbox.add_child(hs)
+	var tab_dex = MarginContainer.new()
+	tab_dex.name = "🐟 FISH DEX"
+	tab_dex.add_theme_constant_override("margin_left", 30)
+	tab_dex.add_theme_constant_override("margin_right", 30)
+	tab_dex.add_theme_constant_override("margin_top", 30)
+	tab_dex.add_theme_constant_override("margin_bottom", 30)
+	tabs.add_child(tab_dex)
 	
 	var scroll = ScrollContainer.new()
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	left_vbox.add_child(scroll)
+	tab_dex.add_child(scroll)
 	
 	_fish_grid = GridContainer.new()
-	_fish_grid.columns = 3
+	_fish_grid.columns = 4
 	_fish_grid.add_theme_constant_override("h_separation", 20)
 	_fish_grid.add_theme_constant_override("v_separation", 20)
 	scroll.add_child(_fish_grid)
 	
 	# ==============================
-	# CỘT PHẢI: TÚI ĐỒ (MỒI & CẦN)
+	# TAB 2: HÀNH TRANG
 	# ==============================
-	var right_vbox = VBoxContainer.new()
-	right_vbox.custom_minimum_size = Vector2(400, 0)
-	hbox.add_child(right_vbox)
+	var tab_inv = MarginContainer.new()
+	tab_inv.name = "🎒 HÀNH TRANG"
+	tab_inv.add_theme_constant_override("margin_left", 30)
+	tab_inv.add_theme_constant_override("margin_right", 30)
+	tab_inv.add_theme_constant_override("margin_top", 30)
+	tab_inv.add_theme_constant_override("margin_bottom", 30)
+	tabs.add_child(tab_inv)
 	
-	var title_right = Label.new()
-	title_right.text = "🎒 HÀNH TRANG"
-	title_right.add_theme_font_size_override("font_size", 40)
-	title_right.add_theme_color_override("font_color", Color.WHITE)
-	title_right.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	right_vbox.add_child(title_right)
+	var scroll_inv = ScrollContainer.new()
+	scroll_inv.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	tab_inv.add_child(scroll_inv)
 	
-	var hs2 = HSeparator.new()
-	right_vbox.add_child(hs2)
+	_inv_grid = GridContainer.new()
+	_inv_grid.columns = 4
+	_inv_grid.add_theme_constant_override("h_separation", 20)
+	_inv_grid.add_theme_constant_override("v_separation", 20)
+	scroll_inv.add_child(_inv_grid)
 	
-	_stats_label = Label.new()
-	_stats_label.add_theme_font_size_override("font_size", 28)
-	right_vbox.add_child(_stats_label)
-	
-	right_vbox.add_child(HSeparator.new())
-	
-	_bait_label = Label.new()
-	_bait_label.add_theme_font_size_override("font_size", 28)
-	right_vbox.add_child(_bait_label)
-	
-	right_vbox.add_child(HSeparator.new())
-	
-	_rod_label = Label.new()
-	_rod_label.add_theme_font_size_override("font_size", 28)
-	right_vbox.add_child(_rod_label)
-	
-	var spacer = Control.new()
-	spacer.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	right_vbox.add_child(spacer)
+	# ==============================
+	# FOOTER
+	# ==============================
+	vbox_main.add_child(HSeparator.new())
 	
 	# Nút Đóng
 	_close_btn = Button.new()
 	_close_btn.text = "✖ ĐÓNG TÚI ĐỒ"
+	_close_btn.custom_minimum_size = Vector2(0, 80)
 	_close_btn.add_theme_font_size_override("font_size", 32)
 	var style_btn = StyleBoxFlat.new()
 	style_btn.bg_color = Color(0.8, 0.2, 0.2)
@@ -134,33 +121,43 @@ func _build_ui() -> void:
 	style_btn.content_margin_top = 15
 	style_btn.content_margin_bottom = 15
 	_close_btn.add_theme_stylebox_override("normal", style_btn)
-	right_vbox.add_child(_close_btn)
+	vbox_main.add_child(_close_btn)
 
 func _populate_data() -> void:
-	# 1. Điền số dư
-	_stats_label.text = "💎 Kim cương: %d\n🪙 Vàng: %d" % [
-		GameManager.get_currency("diamond"),
-		GameManager.get_currency("gold")
-	]
+	# 1. Điền số dư & Vật tư
+	_inv_grid.add_child(_create_inv_card("💎", "Ngọc Trai", str(GameManager.get_currency("pearl"))))
+	_inv_grid.add_child(_create_inv_card("🪙", "Vàng", str(GameManager.get_currency("gold"))))
 	
-	# 2. Điền mồi câu
-	var b_c = PlayerInventory.get_bait_count("bait_lure_c")
-	var b_l = PlayerInventory.get_bait_count("bait_live")
-	_bait_label.text = "🐛 Mồi Cơ Bản: Vô hạn\n🐟 Mồi Thường: %dx\n🐙 Mồi Sống: %dx" % [b_c, b_l]
+	var stone_cnt = PlayerInventory.get_material_count("enhance_stone")
+	if stone_cnt > 0: _inv_grid.add_child(_create_inv_card("💠", "Đá Cường Hóa", str(stone_cnt)))
+	
+	var luck_cnt = PlayerInventory.get_material_count("charm_luck")
+	if luck_cnt > 0: _inv_grid.add_child(_create_inv_card("🍀", "Bùa May Mắn", str(luck_cnt)))
+	
+	var magic_cnt = PlayerInventory.get_material_count("charm_magic")
+	if magic_cnt > 0: _inv_grid.add_child(_create_inv_card("✨", "Bùa Ma Thuật", str(magic_cnt)))
+	
+	# 2. (Đã bỏ hiển thị mồi câu trong kho)
 	
 	# 3. Điền cần câu
-	var rods_text = "🎣 Cần đang sở hữu:\n"
 	for rod_id in PlayerInventory.owned_rod_ids:
 		var rname = rod_id
-		if rod_id == "rod_basic": rname = "Cần Tre (Mặc định)"
-		if rod_id == "rod_silver": rname = "Cần Bạc"
-		if rod_id == "rod_gold": rname = "Cần Vàng"
-		
+		var icon = "🎣"
+		if rod_id == "rod_basic": rname = "Cần Tre"
+		if rod_id == "rod_silver": 
+			rname = "Cần Bạc"
+			icon = "🥈"
+		if rod_id == "rod_gold": 
+			rname = "Cần Vàng"
+			icon = "🥇"
+		if rod_id == "rod_leviathan":
+			rname = "Cần Leviathan"
+			icon = "🔱"
+			
+		var status = "Sở hữu"
 		if GameManager.player_data.get("equipped_rod", "") == rod_id:
-			rods_text += "- " + rname + " (Đang dùng)\n"
-		else:
-			rods_text += "- " + rname + "\n"
-	_rod_label.text = rods_text
+			status = "Đang dùng"
+		_inv_grid.add_child(_create_inv_card(icon, rname, status))
 	
 	# 4. Vẽ lưới cá
 	# Gộp các cá giống ID lại để đếm số lượng
@@ -221,6 +218,41 @@ func _populate_data() -> void:
 			cvbox.add_child(info_lbl)
 			
 			_fish_grid.add_child(card)
+
+func _create_inv_card(icon: String, name: String, info: String) -> PanelContainer:
+	var card = PanelContainer.new()
+	var style_card = StyleBoxFlat.new()
+	style_card.bg_color = Color(1, 1, 1, 0.1)
+	style_card.set_corner_radius_all(15)
+	style_card.content_margin_left = 15
+	style_card.content_margin_right = 15
+	style_card.content_margin_top = 15
+	style_card.content_margin_bottom = 15
+	card.add_theme_stylebox_override("panel", style_card)
+	
+	var cvbox = VBoxContainer.new()
+	card.add_child(cvbox)
+	
+	var icon_lbl = Label.new()
+	icon_lbl.text = icon
+	icon_lbl.add_theme_font_size_override("font_size", 60)
+	icon_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	cvbox.add_child(icon_lbl)
+	
+	var name_lbl = Label.new()
+	name_lbl.text = name
+	name_lbl.add_theme_font_size_override("font_size", 20)
+	name_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	cvbox.add_child(name_lbl)
+	
+	var info_lbl = Label.new()
+	info_lbl.text = info
+	info_lbl.add_theme_font_size_override("font_size", 18)
+	info_lbl.add_theme_color_override("font_color", Color.YELLOW)
+	info_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	cvbox.add_child(info_lbl)
+	
+	return card
 
 func _on_close_pressed() -> void:
 	AudioManager.play_sfx("ui_click")

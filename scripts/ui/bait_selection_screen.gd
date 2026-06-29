@@ -26,7 +26,7 @@ signal popup_closed()
 @onready var status_label: Label = $Root/StatusLabel
 
 const PRICE_BAIT_C: int = 50
-const PRICE_BAIT_LIVE: int = 500
+const PRICE_BAIT_LIVE: int = 200
 
 
 func _ready() -> void:
@@ -38,8 +38,23 @@ func _ready() -> void:
 	equip_c_btn.pressed.connect(func(): _on_equip_pressed("bait_lure_c"))
 	equip_live_btn.pressed.connect(func(): _on_equip_pressed("bait_live"))
 	
-	buy_c_btn.pressed.connect(func(): _on_buy_pressed("bait_lure_c", PRICE_BAIT_C))
-	buy_live_btn.pressed.connect(func(): _on_buy_pressed("bait_live", PRICE_BAIT_LIVE))
+	buy_c_btn.visible = false
+	buy_live_btn.visible = false
+	$Root/Panel/VBoxContainer/BaitFree/BuyBtn.visible = false
+	$Root/Panel/VBoxContainer/BaitFree/QtyLabel.text = "Giá: Miễn phí"
+	
+	# Tạo thêm dòng cho Mồi Phát Sáng
+	var vbox = $Root/Panel/VBoxContainer
+	var glow_row = vbox.get_node("BaitLive").duplicate()
+	glow_row.name = "BaitGlow"
+	vbox.add_child(glow_row)
+	
+	glow_row.get_node("NameLabel").text = "🌟 Mồi Phát Sáng (Rank VIP)"
+	glow_row.get_node("QtyLabel").text = "Giá: 1 💎 / Lần"
+	glow_row.get_node("BuyBtn").visible = false
+	
+	var equip_glow_btn = glow_row.get_node("EquipBtn")
+	equip_glow_btn.pressed.connect(func(): _on_equip_pressed("bait_glow"))
 	
 	EventBus.inventory_updated.connect(_refresh_ui)
 	EventBus.currency_changed.connect(func(_a, _b): _refresh_ui())
@@ -48,21 +63,13 @@ func _ready() -> void:
 
 
 func _refresh_ui() -> void:
-	# Cập nhật số lượng
-	var qty_c = PlayerInventory.get_bait_count("bait_lure_c")
-	var qty_live = PlayerInventory.get_bait_count("bait_live")
+	# Cập nhật hiển thị giá tiền
+	qty_c_label.text = "Giá: %d Vàng / Lần" % PRICE_BAIT_C
+	qty_live_label.text = "Giá: %d Vàng / Lần" % PRICE_BAIT_LIVE
 	
-	qty_c_label.text = "Đang có: %d" % qty_c
-	qty_live_label.text = "Đang có: %d" % qty_live
-	
-	# Nút trang bị (vô hiệu hoá nếu hết mồi)
-	equip_c_btn.disabled = (qty_c <= 0)
-	equip_live_btn.disabled = (qty_live <= 0)
-	
-	# Nút mua (vô hiệu hoá nếu không đủ tiền)
-	var gold = GameManager.get_currency("gold")
-	buy_c_btn.disabled = (gold < PRICE_BAIT_C)
-	buy_live_btn.disabled = (gold < PRICE_BAIT_LIVE)
+	# Luôn cho phép chọn mồi (sẽ trừ tiền khi quăng cần)
+	equip_c_btn.disabled = false
+	equip_live_btn.disabled = false
 
 
 func _on_buy_pressed(bait_id: String, price: int) -> void:

@@ -104,8 +104,7 @@ func _ready() -> void:
 	_hud.open_bait_selection.connect(_on_hud_open_bait_selection)
 	_hud.change_rod_pressed.connect(_on_hud_change_rod)
 	_hud.open_shop.connect(_on_hud_open_shop)
-	_hud.open_forge.connect(_on_hud_open_forge)
-	_hud.open_upgrade.connect(_on_hud_open_upgrade)
+	_hud.open_inventory.connect(_on_open_inventory)
 	_hud.go_home.connect(_on_hud_go_home)
 	_hud.auto_fish_toggled.connect(_on_auto_fish_toggled)
 	
@@ -229,6 +228,8 @@ func _on_bait_chosen(bait_id: String) -> void:
 		_select_bait_c()
 	elif bait_id == "bait_live":
 		_select_bait_live()
+	elif bait_id == "bait_glow":
+		_select_bait_glow()
 
 
 func _on_hud_change_rod() -> void:
@@ -250,19 +251,12 @@ func _on_hud_open_shop() -> void:
 	var shop = ShopScreenScene.instantiate()
 	add_child(shop)
 
-func _on_hud_open_forge() -> void:
-	if _state != Phase1State.IDLE:
-		_hud.show_status("Đang bận câu cá!", 2.0, Color.RED)
-		return
-	var forge = ForgeScreenScene.instantiate()
-	add_child(forge)
-
-func _on_hud_open_upgrade() -> void:
-	if _state != Phase1State.IDLE:
-		_hud.show_status("Đang bận câu cá!", 2.0, Color.RED)
-		return
-	var upg = UpgradeScreenScene.instantiate()
-	add_child(upg)
+func _on_open_inventory() -> void:
+	if _state not in [Phase1State.IDLE, Phase1State.WAITING]: return
+	AudioManager.play_sfx("ui_click")
+	var inv = preload("res://scenes/ui/inventory_screen.tscn").instantiate()
+	add_child(inv)
+	inv.inventory_closed.connect(func(): _hud.update_currency(GameManager.get_currency("gold"), GameManager.get_currency("pearl")))
 
 func _on_hud_go_home() -> void:
 	SaveManager.save_game()
@@ -312,6 +306,22 @@ func _select_bait_live() -> void:
 	_update_float_visual()
 	EventBus.bait_selected.emit(_selected_bait)
 
+func _select_bait_glow() -> void:
+	var path := "res://resources/bait/bait_glow.tres"
+	if ResourceLoader.exists(path):
+		_selected_bait = (load(path) as BaitData).to_dict()
+	else:
+		_selected_bait = {
+			"id": "bait_glow",
+			"name": "Mồi Phát Sáng",
+			"tier": "glow",
+			"pointer_speed_bonus": LIVE_BAIT_SPEED_BONUS,
+			"is_live": true,
+			"zone_bonus": "",
+		}
+	_update_float_visual()
+	EventBus.bait_selected.emit(_selected_bait)
+
 func _update_float_visual() -> void:
 	if float_label == null: return
 	var current_rod = PlayerInventory.get_equipped_rod()
@@ -345,19 +355,34 @@ func _on_cast_pressed() -> void:
 	if _state != Phase1State.IDLE:
 		return
 
-	## KIỂM TRA MỒI
+	## KIỂM TRA MỒI & TRỪ TIỀN
 	if _selected_bait.get("is_free", false) == false:
-		var stock = PlayerInventory.get_bait_count(_selected_bait.id)
-		if stock <= 0:
+		var bait_id = _selected_bait.get("id", "")
+		var price_gold = 0
+		var price_pearl = 0
+		
+		if bait_id == "bait_lure_c":
+			price_gold = 50
+		elif bait_id == "bait_live":
+			price_gold = 200
+		elif bait_id == "bait_glow":
+			price_pearl = 1
+			
+		var current_gold = GameManager.get_currency("gold")
+		var current_pearl = GameManager.get_currency("pearl")
+		
+		if current_gold < price_gold or current_pearl < price_pearl:
 			if _auto_fishing:
-				_hud.show_status("Hết mồi xịn! Tự động chuyển về mồi cơ bản.", 2.0, Color.YELLOW)
+				_hud.show_status("Không đủ tiền mua mồi! Tự động chuyển về mồi cơ bản.", 2.0, Color.YELLOW)
 				_select_bait_free()
 			else:
-				_hud.show_status("Hết mồi này rồi!", 1.5, Color.RED)
+				_hud.show_status("Không đủ tiền ném mồi này!", 1.5, Color.RED)
 				return
 		else:
-			PlayerInventory.consume_bait(_selected_bait.id)
-			_hud.update_bait_text(_selected_bait.display_name, stock - 1)
+			if price_gold > 0:
+				GameManager.spend_currency("gold", price_gold)
+			if price_pearl > 0:
+				GameManager.spend_currency("pearl", price_pearl)
 
 	_set_state(Phase1State.CASTING)
 

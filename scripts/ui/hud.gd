@@ -16,8 +16,7 @@ signal change_rod_pressed()
 signal change_bait_pressed()
 signal open_bait_selection()
 signal open_shop()
-signal open_forge()
-signal open_upgrade()
+signal open_inventory()
 signal go_home()
 signal auto_fish_toggled(is_on: bool)
 
@@ -35,7 +34,7 @@ var _profile_name: Label
 var _gold_label:   Label
 var _gem_label:    Label
 var _btn_shop:     Button
-var _btn_upgrade_menu: MenuButton
+var _btn_inv: Button
 var _btn_home:     Button
 
 # --- Debug Panel ---
@@ -166,18 +165,13 @@ func _build_ui() -> void:
 	_btn_shop.pressed.connect(func(): open_shop.emit())
 	top_right.add_child(_btn_shop)
 
-	_btn_upgrade_menu = MenuButton.new()
-	_btn_upgrade_menu.position = Vector2(-950, 0)
-	_btn_upgrade_menu.size = Vector2(180, 50)
-	_btn_upgrade_menu.text = "⬆️ NÂNG CẤP"
-	_btn_upgrade_menu.add_theme_font_size_override("font_size", 28)
-	var popup = _btn_upgrade_menu.get_popup()
-	popup.add_item("🔨 Lò Rèn", 0)
-	popup.add_item("💪 Tu Luyện (Nhân Vật)", 1)
-	popup.id_pressed.connect(_on_upgrade_menu_selected)
-	# Style the popup for better visibility
-	popup.add_theme_font_size_override("font_size", 28)
-	top_right.add_child(_btn_upgrade_menu)
+	_btn_inv = Button.new()
+	_btn_inv.position = Vector2(-950, 0)
+	_btn_inv.size = Vector2(180, 50)
+	_btn_inv.text = "🎒 TÚI ĐỒ"
+	_btn_inv.add_theme_font_size_override("font_size", 28)
+	_btn_inv.pressed.connect(func(): open_inventory.emit())
+	top_right.add_child(_btn_inv)
 
 	# Nút quay về trang chủ
 	_btn_home = Button.new()
@@ -214,16 +208,16 @@ func _build_ui() -> void:
 	
 	# Đổi cần câu
 	_btn_rod = Button.new()
-	_btn_rod.position = Vector2(0, -260)
-	_btn_rod.size = Vector2(120, 120)
-	_btn_rod.pivot_offset = Vector2(60, 60)
+	_btn_rod.position = Vector2(0, -320)
+	_btn_rod.size = Vector2(140, 140)
+	_btn_rod.pivot_offset = Vector2(70, 70)
 	_btn_rod.text = "🎣"
-	_btn_rod.add_theme_font_size_override("font_size", 60)
+	_btn_rod.add_theme_font_size_override("font_size", 70)
 	_btn_rod.pressed.connect(func(): change_rod_pressed.emit())
 	bot_left.add_child(_btn_rod)
 	
 	var lbl_rod := Label.new()
-	lbl_rod.position = Vector2(-60, -130)
+	lbl_rod.position = Vector2(-50, -170)
 	lbl_rod.size = Vector2(240, 30)
 	lbl_rod.text = "Đổi cần câu"
 	lbl_rod.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -232,16 +226,16 @@ func _build_ui() -> void:
 
 	# Đổi mồi câu
 	_btn_bait = Button.new()
-	_btn_bait.position = Vector2(0, -100)
-	_btn_bait.size = Vector2(120, 120)
-	_btn_bait.pivot_offset = Vector2(60, 60)
+	_btn_bait.position = Vector2(0, -140)
+	_btn_bait.size = Vector2(140, 140)
+	_btn_bait.pivot_offset = Vector2(70, 70)
 	_btn_bait.text = "🪱"
-	_btn_bait.add_theme_font_size_override("font_size", 60)
+	_btn_bait.add_theme_font_size_override("font_size", 70)
 	_btn_bait.pressed.connect(func(): open_bait_selection.emit())
 	bot_left.add_child(_btn_bait)
 	
 	_bait_label = Label.new()
-	_bait_label.position = Vector2(-60, 30)
+	_bait_label.position = Vector2(-50, 10)
 	_bait_label.size = Vector2(240, 30)
 	_bait_label.text = "Đổi mồi câu"
 	_bait_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -262,7 +256,7 @@ func _build_ui() -> void:
 	# The real button (Circular Button with Text)
 	_btn_action = Button.new()
 	var btn_size = 280.0
-	_btn_action.position = Vector2(-btn_size - 40, -btn_size - 40)
+	_btn_action.position = Vector2(-btn_size - 80, -btn_size - 80)
 	_btn_action.size = Vector2(btn_size, btn_size)
 	_btn_action.pivot_offset = Vector2(btn_size/2, btn_size/2)
 	
@@ -282,7 +276,7 @@ func _build_ui() -> void:
 	bot_right.add_child(_btn_action)
 	
 	_btn_auto = CheckButton.new()
-	_btn_auto.position = Vector2(-btn_size - 320, -100)
+	_btn_auto.position = Vector2(-btn_size - 360, -140)
 	_btn_auto.size = Vector2(280, 60)
 	_btn_auto.text = "🤖 Tự Động (Auto)"
 	_btn_auto.add_theme_font_size_override("font_size", 24)
@@ -349,7 +343,7 @@ func _play_button_anim() -> void:
 
 func _refresh_all() -> void:
 	_update_gold(GameManager.get_currency("gold"))
-	_update_gem(GameManager.get_currency("gem"))
+	_update_gem(GameManager.get_currency("pearl"))
 	_update_exp_bar()
 
 
@@ -394,11 +388,7 @@ func update_currency(gold: int, pearl: int) -> void:
 	_gem_label.text  = "💎 " + str(pearl)
 
 
-func _on_upgrade_menu_selected(id: int) -> void:
-	if id == 0:
-		open_forge.emit()
-	elif id == 1:
-		open_upgrade.emit()
+
 
 
 # =============================================
@@ -441,7 +431,7 @@ func _build_debug_panel(root: Control) -> void:
 	vbox.add_child(HSeparator.new())
 	
 	_add_debug_btn(vbox, "+10,000 Vàng", func(): GameManager.add_currency("gold", 10000))
-	_add_debug_btn(vbox, "+100 Ngọc Trai", func(): GameManager.add_currency("pearl", 100))
+	_add_debug_btn(vbox, "+100 💎", func(): GameManager.add_currency("pearl", 100))
 	_add_debug_btn(vbox, "+10 Đá Cường Hóa", func(): PlayerInventory.add_material("enhance_stone", 10))
 	_add_debug_btn(vbox, "+10 Bùa May Mắn", func(): PlayerInventory.add_material("charm_luck", 10))
 	_add_debug_btn(vbox, "+10 Bùa Ma Thuật", func(): PlayerInventory.add_material("charm_magic", 10))
@@ -485,7 +475,7 @@ func _add_debug_btn(parent: Node, text: String, callback: Callable) -> void:
 func _on_currency_changed(type: String, amount: int) -> void:
 	if type == "gold":
 		_update_gold(amount)
-	elif type == "gem":
+	elif type == "pearl":
 		_update_gem(amount)
 
 
@@ -508,19 +498,34 @@ func _on_level_up(new_level: int) -> void:
 func _on_bait_selected(bait_data) -> void:
 	if not _bait_label:
 		return
-	var qty: int = 0
 	var b_name: String = "Mồi"
+	var b_id: String = ""
 	if bait_data is Dictionary:
-		qty = PlayerInventory.get_bait_count(str(bait_data.get("id", "")))
 		b_name = bait_data.get("name", "Mồi")
+		b_id = bait_data.get("id", "")
 	elif bait_data is BaitData:
-		qty = PlayerInventory.get_bait_count(bait_data.id)
-		b_name = bait_data.name
+		b_name = bait_data.display_name
+		b_id = bait_data.id
 	
-	var qty_str := " (∞)" if qty <= 0 else " (%d)" % qty
-	if b_name == "Mồi Cơ Bản":
-		qty_str = " (∞)"
-	_bait_label.text = "%s\n%s" % [b_name, qty_str]
+	var cost_str := "Miễn phí"
+	var icon := "🪱"
+	
+	if b_id == "bait_lure_c":
+		cost_str = "50 Vàng"
+		icon = "🐛"
+	elif b_id == "bait_live":
+		cost_str = "200 Vàng"
+		icon = "🐙"
+	elif b_id == "bait_glow":
+		cost_str = "1 💎"
+		icon = "🌟"
+	elif b_id == "bait_free":
+		cost_str = "Miễn phí"
+		icon = "🐛"
+		
+	_bait_label.text = cost_str
+	if _btn_bait:
+		_btn_bait.text = icon
 
 
 func _on_fish_caught(_fish_data) -> void:

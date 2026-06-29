@@ -192,14 +192,18 @@ func _build_ui() -> void:
 	style_sub_btn.border_color = Color(0.1, 0.2, 0.4)
 	style_sub_btn.border_width_bottom = 6
 	
-	var btn_inv := Button.new()
-	btn_inv.text = "🎒 Túi đồ"
-	btn_inv.custom_minimum_size = Vector2(370, 95)
-	btn_inv.add_theme_stylebox_override("normal", style_sub_btn)
-	btn_inv.add_theme_stylebox_override("disabled", style_sub_btn)
-	btn_inv.add_theme_font_size_override("font_size", 38)
-	btn_inv.pressed.connect(_on_inv_pressed)
-	row.add_child(btn_inv)
+	var btn_upgrade_menu := MenuButton.new()
+	btn_upgrade_menu.text = "⬆️ Nâng cấp"
+	btn_upgrade_menu.custom_minimum_size = Vector2(370, 95)
+	btn_upgrade_menu.add_theme_stylebox_override("normal", style_sub_btn)
+	btn_upgrade_menu.add_theme_stylebox_override("disabled", style_sub_btn)
+	btn_upgrade_menu.add_theme_font_size_override("font_size", 38)
+	var popup = btn_upgrade_menu.get_popup()
+	popup.add_item("🔨 Lò Rèn", 0)
+	popup.add_item("💪 Tu Luyện (Nhân Vật)", 1)
+	popup.id_pressed.connect(_on_upgrade_menu_selected)
+	popup.add_theme_font_size_override("font_size", 38)
+	row.add_child(btn_upgrade_menu)
 
 	var btn_shop := Button.new()
 	btn_shop.text = "🏪 Cửa hàng"
@@ -274,14 +278,20 @@ func _on_play_pressed() -> void:
 		get_tree().change_scene_to_file("res://scenes/gameplay/fishing_phase1.tscn")
 	)
 
-const INVENTORY_SCENE = preload("res://scenes/ui/inventory_screen.tscn")
 const SHOP_SCENE = preload("res://scenes/ui/shop_screen.tscn")
+const FORGE_SCENE = preload("res://scenes/ui/forge_screen.tscn")
+const UPGRADE_SCENE = preload("res://scenes/ui/upgrade_screen.tscn")
 
-func _on_inv_pressed() -> void:
+func _on_upgrade_menu_selected(id: int) -> void:
 	AudioManager.play_sfx("ui_click")
-	var inv = INVENTORY_SCENE.instantiate()
-	add_child(inv)
-	inv.inventory_closed.connect(_refresh_player_stats) # Refresh tiền sau khi bán cá/mua đồ (nếu có)
+	if id == 0:
+		var forge = FORGE_SCENE.instantiate()
+		add_child(forge)
+		forge.closed.connect(_refresh_player_stats)
+	elif id == 1:
+		var upg = UPGRADE_SCENE.instantiate()
+		add_child(upg)
+		upg.closed.connect(_refresh_player_stats)
 
 func _on_shop_pressed() -> void:
 	AudioManager.play_sfx("ui_click")
