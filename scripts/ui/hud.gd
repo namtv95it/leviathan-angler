@@ -41,7 +41,7 @@ var _bait_label: Label
 
 # --- Bottom Right (Action) ---
 var _btn_action_bg: ColorRect
-var _btn_action: TextureButton
+var _btn_action: Button
 var _btn_action_label: Label
 
 
@@ -229,25 +229,28 @@ func _build_ui() -> void:
 	# --- BOTTOM RIGHT: BIG ACTION BUTTON ---
 	var bot_right := Control.new()
 	bot_right.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
-	bot_right.position = Vector2(-280, -280)
+	bot_right.position = Vector2(0, 0)
 	bot_right.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	root.add_child(bot_right)
 	
 	# Background Glow (removed because the texture already has it)
 	# _btn_action_bg = ColorRect.new()
 	
-	# The real button
-	_btn_action = TextureButton.new()
-	_btn_action.position = Vector2(-200, -200)
-	_btn_action.size = Vector2(400, 400)
-	_btn_action.pivot_offset = Vector2(200, 200)
-	_btn_action.ignore_texture_size = true
-	_btn_action.stretch_mode = TextureButton.STRETCH_SCALE
+	# The real button (Circular Button with Text)
+	_btn_action = Button.new()
+	var btn_size = 280.0
+	_btn_action.position = Vector2(-btn_size - 40, -btn_size - 40)
+	_btn_action.size = Vector2(btn_size, btn_size)
+	_btn_action.pivot_offset = Vector2(btn_size/2, btn_size/2)
 	
-	var tex_normal = load("res://assets/art/btn_action_nomal.png")
-	var tex_pressed = load("res://assets/art/btn_action_pressed.png")
-	if tex_normal: _btn_action.texture_normal = tex_normal
-	if tex_pressed: _btn_action.texture_pressed = tex_pressed
+	_btn_action.add_theme_font_size_override("font_size", 56)
+	_btn_action.add_theme_color_override("font_color", Color(1, 1, 1, 1))
+	_btn_action.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.5))
+	_btn_action.add_theme_constant_override("outline_size", 8)
+	_btn_action.text = "THẢ CÂU"
+	
+	# Mặc định gọi hàm set_action_text để tạo style chuẩn
+	set_action_text("THẢ CÂU", Color(0.9, 0.4, 0.1))
 	
 	_btn_action.pressed.connect(func(): 
 		_play_button_anim()
@@ -259,8 +262,32 @@ func _build_ui() -> void:
 # API HỖ TRỢ GAMEPLAY
 # =============================================
 
-func set_action_text(text: String, glow_color: Color = Color(0.6, 0.1, 1.0, 0.4)) -> void:
-	pass
+func set_action_text(text: String, glow_color: Color = Color(0.9, 0.4, 0.1)) -> void:
+	if not _btn_action: return
+	
+	_btn_action.text = text
+	
+	var btn_size = 280.0
+	var style_normal = StyleBoxFlat.new()
+	style_normal.bg_color = glow_color
+	style_normal.corner_radius_top_left = int(btn_size / 2)
+	style_normal.corner_radius_top_right = int(btn_size / 2)
+	style_normal.corner_radius_bottom_left = int(btn_size / 2)
+	style_normal.corner_radius_bottom_right = int(btn_size / 2)
+	style_normal.border_width_bottom = 12
+	style_normal.border_color = glow_color.darkened(0.4)
+	
+	var style_pressed = style_normal.duplicate()
+	style_pressed.bg_color = glow_color.darkened(0.2)
+	style_pressed.border_width_bottom = 0
+	
+	var style_hover = style_normal.duplicate()
+	style_hover.bg_color = glow_color.lightened(0.2)
+	
+	_btn_action.add_theme_stylebox_override("normal", style_normal)
+	_btn_action.add_theme_stylebox_override("pressed", style_pressed)
+	_btn_action.add_theme_stylebox_override("hover", style_hover)
+	_btn_action.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
 
 func set_action_visible(is_visible: bool) -> void:
 	if _btn_action:

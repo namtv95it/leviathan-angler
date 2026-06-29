@@ -72,6 +72,16 @@ func _ready() -> void:
 	if ui_layer:
 		ui_layer.visible = false
 
+	## Xóa BgLayer cũ (ảnh nền tĩnh)
+	var old_bg = get_node_or_null("BgLayer")
+	if old_bg:
+		old_bg.queue_free()
+
+	## Nạp background động (Procedural Rock & Sea)
+	var dynamic_bg = preload("res://scripts/gameplay/background_visual.gd").new()
+	add_child(dynamic_bg)
+	move_child(dynamic_bg, 0)
+
 	_select_bait_free()
 	_update_rod_visual()
 	
@@ -263,23 +273,11 @@ func _update_float_visual() -> void:
 
 func _update_rod_visual() -> void:
 	var current_rod = PlayerInventory.get_equipped_rod()
-	if current_rod == null: return
+	var rod_id = current_rod.id if current_rod else "rod_basic"
 
-	var sprite = rod_visual.get_node_or_null("RodSprite")
-	if not sprite: return
+	if rod_visual and rod_visual.has_method("apply_style"):
+		rod_visual.apply_style(rod_id)
 
-	sprite.visible = true
-
-	var tex_map := {
-		"rod_basic":  "res://assets/art/basic_wooden_rod.png",
-		"rod_silver": "res://assets/art/starlight_weaver_rod.png",
-		"rod_gold":   "res://assets/art/void_eye_rod.png",
-	}
-	var tex_path: String = tex_map.get(current_rod.id, "res://assets/art/basic_wooden_rod.png")
-	if ResourceLoader.exists(tex_path):
-		if "texture" in sprite:
-			sprite.texture = load(tex_path)
-	sprite.modulate = Color(1.0, 1.0, 1.0)
 	_update_float_visual()
 
 

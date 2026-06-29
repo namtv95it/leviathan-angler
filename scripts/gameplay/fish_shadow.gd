@@ -58,23 +58,15 @@ func setup(fish_data, bait_data: Dictionary, target_pos: Vector2 = Vector2.ZERO)
 
 	var rank: String = _get_rank()
 
-	var tex_path := ""
-	match rank:
-		"C": tex_path = "res://assets/art/shadow_small.png"
-		"B": tex_path = "res://assets/art/shadow_medium.png"
-		"A", "S": tex_path = "res://assets/art/shadow_large.png"
-		"SS": tex_path = "res://assets/art/shadow_boss.png"
-		_: tex_path = "res://assets/art/shadow_small.png"
+	# Bỏ dùng ảnh tĩnh, ẩn sprite nếu có
+	if is_instance_valid(shadow_sprite):
+		shadow_sprite.visible = false
 	
-	if ResourceLoader.exists(tex_path):
-		shadow_sprite.texture = load(tex_path)
-	
-	# Đặt độ trong suốt nhẹ cho bóng dưới nước
-	shadow_sprite.modulate.a = 0.65
+	queue_redraw()
 
-	## Hiển thị gợi ý kích thước (không lộ rank cụ thể)
-	size_indicator.text = _get_size_hint(rank)
-	size_indicator.add_theme_color_override("font_color", _get_hint_color(rank))
+	## Ẩn chữ gợi ý kích thước theo yêu cầu
+	if is_instance_valid(size_indicator):
+		size_indicator.visible = false
 
 	## Tốc độ (mồi sống làm cá bơi hơi bất thường)
 	_speed = SPEED_BY_RANK.get(rank, 200.0)
@@ -107,17 +99,53 @@ func _process(delta: float) -> void:
 
 	_wobble_time += delta
 
-	## Di chuyển về phía phao
+	## Di chuyển về phía phao và quay đầu cá theo hướng bơi
 	var direction := (_target_pos - global_position).normalized()
+	rotation = direction.angle()
 	global_position += direction * _speed * delta
 
 	## Hiệu ứng bơi: nhấp nhô lên xuống nhẹ
 	global_position.y += sin(_wobble_time * 4.0) * 1.5
+	queue_redraw()
 
 	## Kiểm tra đã đến phao chưa (trong vòng 30px)
 	if global_position.distance_to(_target_pos) < 30.0:
 		_moving = false
 		_on_reached_float()
+
+func _draw() -> void:
+	var rank: String = _get_rank()
+	var size = SIZE_BY_RANK.get(rank, Vector2(50, 18))
+	var color = COLOR_BY_RANK.get(rank, Color(0.0, 0.0, 0.0, 0.4))
+	
+	# Biên độ vẫy đuôi phụ thuộc vào rank và tốc độ
+	var tail_wobble = sin(_wobble_time * 15.0) * (size.y * 0.35)
+	
+	# 1. Vẽ thân cá (Fish Body)
+	var body_pts = PackedVector2Array()
+	var segments = 16
+	for i in range(segments + 1):
+		var t = float(i) / float(segments) * TAU
+		var x = cos(t) * (size.x / 2.0)
+		var y = sin(t) * (size.y / 2.0)
+		
+		# Vuốt nhọn phần đuôi (nửa bên trái x < 0)
+		if x < 0:
+			y *= (1.0 + (x / (size.x / 2.0)) * 0.5)
+			
+		body_pts.append(Vector2(x, y))
+		
+	draw_polygon(body_pts, PackedColorArray([color]))
+	
+	# 2. Vẽ đuôi cá (Fish Tail)
+	var tail_pts = PackedVector2Array()
+	var tail_x = -size.x / 2.0 + 5.0
+	tail_pts.append(Vector2(tail_x, 0))
+	tail_pts.append(Vector2(tail_x - size.x * 0.25, -size.y * 0.6 + tail_wobble))
+	tail_pts.append(Vector2(tail_x - size.x * 0.15, tail_wobble * 0.5))
+	tail_pts.append(Vector2(tail_x - size.x * 0.25, size.y * 0.6 + tail_wobble))
+	
+	draw_polygon(tail_pts, PackedColorArray([color]))
 
 
 func _on_reached_float() -> void:
