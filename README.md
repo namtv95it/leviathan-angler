@@ -111,11 +111,27 @@ Luôn giao tiếp qua **EventBus signals**.
 
 ---
 
-## Bước Tiếp Theo
+## Lộ Trình Phát Triển (Sprints & Roadmap)
 
-Sau khi project chạy được:
+### ✅ Sprint 1: Setup & Kiến trúc cơ bản
+- Khởi tạo project, import assets.
+- Setup các Autoloads (`GameManager`, `EventBus`, `SaveManager`, `AudioManager`).
+- Tạo cấu trúc thư mục quy chuẩn.
 
-1. **Tạo FishData Resource** — Định nghĩa loài cá đầu tiên
-2. **Code Giai đoạn 1** — Scene chọn mồi và rình cá
-3. **Code Timing Bar** — Mini-game giai đoạn 2
-4. **Thiết kế HUD** — UI câu cá cơ bản
+### ✅ Sprint 2: Vòng lặp Gameplay Cốt lõi (Core Gameplay Loop)
+- **Phase 1:** Chọn mồi, ném cần, bóng cá xuất hiện và bơi tới phao.
+- **Phase 2:** Mini-game Timing Bar (canh nhịp bấm).
+- **Phase 3:** Mini-game Swipe QTE (vuốt mũi tên).
+- **Phase 4:** Mini-game Button Mash (spam nút thu phục cá).
+- Thiết kế HUD cơ bản và hiệu ứng hình ảnh (cần cong, mây, sóng biển).
+
+### 🚀 Sprint 3: Hệ thống Tiến trình (Meta-game) - [Đang làm]
+- **Túi đồ (Inventory / Fish Dex):** Nơi xem danh sách cá đã câu, quản lý mồi và cần câu.
+- **Cửa hàng (Shop):** Giao diện mua bán mồi câu xịn và nâng cấp cần câu bằng Vàng / Kim cương.
+- Tích hợp hệ thống lưu trữ dữ liệu (Save/Load) cho túi đồ và tiền tệ.
+
+### 🗺️ Sprint 4: Hệ thống Cấp độ & Bản đồ (Level & Zone Systems) - [Sắp tới]
+- **Hệ thống Cấp độ:** Bổ sung UI thông báo Lên cấp (Level Up). Mở khóa cần câu và mồi câu mới dựa trên Level.
+- **Hệ thống Bản đồ Thế giới (World Map):** Giao diện chọn khu vực câu cá (Vùng nước nông, Rạn san hô, Biển sâu, v.v.).
+- Ràng buộc môi trường: Mỗi Zone sẽ có các loài cá riêng biệt (`FishData`) và yêu cầu loại mồi cụ thể (`zone_bonus`).
+- Mở rộng môi trường cho từng Zone (Ví dụ: Biển sâu sẽ có background tối màu và rùng rợn hơn).
