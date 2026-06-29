@@ -27,6 +27,7 @@ var _selected_bait: Dictionary = {}
 var _current_shadow: Node2D = null
 var _wait_timer: float = 0.0
 var _wait_duration: float = 0.0
+var _bait_in_air: bool = false
 
 # Tốc độ con trỏ tăng khi dùng mồi sống
 const BASE_POINTER_SPEED := 1.0
@@ -58,7 +59,7 @@ var _hud: HUD = null
 @onready var rod_visual    := $FishingRod/RodVisual
 @onready var tip_marker    := $FishingRod/RodVisual/TipMarker
 @onready var shadow_layer  := $FishShadowLayer
-@onready var ui_layer      := $UI
+@onready var ui_layer      := get_node_or_null("UI")
 
 
 const FishShadowScene = preload("res://scenes/gameplay/fish_shadow.tscn")
@@ -104,10 +105,12 @@ func _on_viewport_size_changed() -> void:
 
 
 func _process(delta: float) -> void:
-	if is_instance_valid(fishing_line) and is_instance_valid(float_node) and is_instance_valid(tip_marker):
-		var p0 = rod_visual.transform * tip_marker.position
+	if is_instance_valid(fishing_line) and is_instance_valid(float_node):
+		## Lấy đầu cần THỰC TẾ (đã uốn cong) từ rod_visual script
+		var tip_local: Vector2 = rod_visual.get_tip_local() if rod_visual.has_method("get_tip_local") else tip_marker.position
+		var p0 = rod_visual.transform * tip_local
 		
-		if _state == Phase1State.IDLE:
+		if _state == Phase1State.IDLE or (_state == Phase1State.CASTING and not _bait_in_air):
 			fishing_line.visible = false
 			float_node.visible = false
 		else:
@@ -274,7 +277,8 @@ func _update_rod_visual() -> void:
 	}
 	var tex_path: String = tex_map.get(current_rod.id, "res://assets/art/basic_wooden_rod.png")
 	if ResourceLoader.exists(tex_path):
-		sprite.texture = load(tex_path)
+		if "texture" in sprite:
+			sprite.texture = load(tex_path)
 	sprite.modulate = Color(1.0, 1.0, 1.0)
 	_update_float_visual()
 
@@ -292,48 +296,80 @@ func _on_cast_pressed() -> void:
 
 	_set_state(Phase1State.CASTING)
 
-	## === ANIMATION VUNG CẦN 3 PHA ===
-	var rod_sprite = rod_visual.get_node_or_null("RodSprite")
+	## === ANIMATION VUNG CẦN: 2 lần lắc khởi động + 1 lần quăng mạnh ===
+	var has_bend := rod_visual.has_method("set_bend")
 
-	# --- PHA 1: Kéo cần ra sau (0.25s) ---
-	var tw1 := create_tween()
-	tw1.set_parallel(true)
-	tw1.tween_property(rod_visual, "rotation", -0.3, 0.25)\
+	# ─── LẮCC 1: Lắc nhẹ khởi động (về sau → về trước) ───
+	var s1a := create_tween()
+	s1a.tween_property(rod_visual, "rotation", -0.15, 0.18)\
+		.set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_SINE)
+	if has_bend: rod_visual.set_bend(-0.35)
+	await s1a.finished
+
+	var s1b := create_tween()
+	s1b.tween_property(rod_visual, "rotation", 0.55, 0.18)\
+		.set_ease(Tween.EASE_IN_OUT).set_trans(Tween.TRANS_SINE)
+	if has_bend: rod_visual.set_bend(0.5)
+	await s1b.finished
+
+	# ─── LẮCC 2: Lắc mạnh hơn (lấy đà) ───
+	var s2a := create_tween()
+	s2a.tween_property(rod_visual, "rotation", -0.25, 0.16)\
+		.set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_SINE)
+	if has_bend: rod_visual.set_bend(-0.65)
+	await s2a.finished
+
+	var s2b := create_tween()
+	s2b.tween_property(rod_visual, "rotation", 0.65, 0.16)\
+		.set_ease(Tween.EASE_IN_OUT).set_trans(Tween.TRANS_SINE)
+	if has_bend: rod_visual.set_bend(0.75)
+	await s2b.finished
+
+	# ─── QUĂNG THẬT: Kéo ra sau mạnh để lấy đà ───
+	var c1 := create_tween()
+	c1.tween_property(rod_visual, "rotation", -0.42, 0.18)\
 		.set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_QUAD)
-	tw1.tween_property(float_node, "position", rod_visual.transform * tip_marker.position, 0.25)\
-		.from_current()
+	if has_bend: rod_visual.set_bend(-1.2)
+	await c1.finished
 
-	await tw1.finished
-
-	# --- PHA 2: Đầu cần uốn cong dưới lực (0.2s) ---
-	var tw2 := create_tween()
-	tw2.set_parallel(true)
-	if rod_sprite:
-		tw2.tween_property(rod_sprite, "scale:x", rod_sprite.scale.x * 0.75, 0.2)\
-			.set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_QUAD)
-	tw2.tween_property(rod_visual, "rotation", 1.1, 0.2)\
-		.set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_QUAD)
-
-	await tw2.finished
-
+	# ─── VUNG CẦN & MỒI BAY RA (CÙNG LÚC) ───
 	AudioManager.play_sfx("cast_line")
 
-	# --- PHA 3: Cần bật lại + mồi bay ra (0.35s) ---
-	var start_pos = rod_visual.transform * tip_marker.position
+	_bait_in_air = true
+	var tip_local: Vector2 = rod_visual.get_tip_local() if rod_visual.has_method("get_tip_local") else tip_marker.position
+	var start_pos  = rod_visual.transform * tip_local
 	var target_pos = Vector2(1100, -280)
+	float_node.position = start_pos
 
-	var tw3 := create_tween()
-	tw3.set_parallel(true)
-	tw3.tween_property(rod_visual, "rotation", 0.87, 0.35)\
+	## 1. Cần vung tới trước với tốc độ cao và nảy lại nhờ TRANS_BACK
+	var c2 := create_tween()
+	c2.tween_property(rod_visual, "rotation", 0.85, 0.45)\
 		.set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
-	if rod_sprite:
-		tw3.tween_property(rod_sprite, "scale:x", rod_sprite.scale.x / 0.75, 0.35)\
-			.set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
-	tw3.tween_property(float_node, "position", target_pos, 0.4)\
-		.from(start_pos).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_QUAD)
-	tw3.chain().tween_callback(_on_cast_complete)
+	
+	if has_bend:
+		rod_visual.set_bend(1.5)  # Cong gập tới trước do quán tính
+		var bend_tw = create_tween()
+		bend_tw.tween_interval(0.15)
+		bend_tw.tween_callback(func(): if is_instance_valid(rod_visual): rod_visual.set_bend(-0.6))
+		bend_tw.tween_interval(0.15)
+		bend_tw.tween_callback(func(): if is_instance_valid(rod_visual): rod_visual.set_bend(0.0))
+
+	## 2. Mồi bay theo quỹ đạo parabol
+	var float_x_tw := create_tween()
+	float_x_tw.tween_property(float_node, "position:x", target_pos.x, 0.55)\
+		.set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_QUAD)
+
+	var float_y_tw := create_tween()
+	var peak_y := minf(start_pos.y, target_pos.y) - 400.0
+	float_y_tw.tween_property(float_node, "position:y", peak_y, 0.25)\
+		.set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_QUAD)
+	float_y_tw.tween_property(float_node, "position:y", target_pos.y, 0.30)\
+		.set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_QUAD)
+
+	float_y_tw.chain().tween_callback(_on_cast_complete)
 
 func _on_cast_complete() -> void:
+	_bait_in_air = false
 	_set_state(Phase1State.WAITING)
 	_wait_duration = randf_range(2.0, 5.0)
 	_wait_timer    = 0.0
@@ -668,6 +704,7 @@ func _reset_to_idle() -> void:
 
 	## Reset session vars
 	_wait_timer    = 0.0
+	_bait_in_air   = false
 	_quality_multiplier = 1.0
 	_mash_fill     = 0.0
 	_boss_rage_remaining = 0
@@ -677,4 +714,7 @@ func _reset_to_idle() -> void:
 	tween.set_parallel(true)
 	tween.tween_property(rod_visual, "rotation", 0.35, 0.3)
 	tween.tween_property(float_node, "position", rod_visual.transform * tip_marker.position, 0.3)
+	## Đảm bảo cần thẳng lại
+	if rod_visual.has_method("set_bend"):
+		rod_visual.set_bend(0.0)
 	tween.chain().tween_callback(func(): _set_state(Phase1State.IDLE))
