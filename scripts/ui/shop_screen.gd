@@ -18,6 +18,9 @@ var _close_btn: Button
 var _btn_bait_c: Button
 var _btn_bait_live: Button
 var _btn_bait_glow: Button
+var _btn_buy_stone: Button
+var _btn_buy_charm_luck: Button
+var _btn_buy_charm_magic: Button
 
 func _ready() -> void:
 	layer = 50
@@ -145,6 +148,36 @@ func _build_ui() -> void:
 	_btn_bait_glow = _create_button("Chế Mồi Phát Sáng", Color(0.7, 0.2, 0.8))
 	_btn_bait_glow.pressed.connect(_craft_bait_glow)
 	col_bait.add_child(_btn_bait_glow)
+	col_bait.add_child(HSeparator.new())
+	
+	var stone_lbl = Label.new()
+	stone_lbl.text = "Đá Cường Hóa (Dùng để rèn)\nGiá: 🪙 200"
+	stone_lbl.add_theme_font_size_override("font_size", 22)
+	col_bait.add_child(stone_lbl)
+	
+	_btn_buy_stone = _create_button("Mua (200 Vàng)", Color(0.6, 0.6, 0.6))
+	_btn_buy_stone.pressed.connect(_buy_enhance_stone)
+	col_bait.add_child(_btn_buy_stone)
+	col_bait.add_child(HSeparator.new())
+	
+	var charm_lbl = Label.new()
+	charm_lbl.text = "Bùa May Mắn (+25% Tỷ lệ)\nGiá: 🪙 500"
+	charm_lbl.add_theme_font_size_override("font_size", 22)
+	col_bait.add_child(charm_lbl)
+	
+	_btn_buy_charm_luck = _create_button("Mua (500 Vàng)", Color(0.9, 0.6, 0.2))
+	_btn_buy_charm_luck.pressed.connect(_buy_charm_luck)
+	col_bait.add_child(_btn_buy_charm_luck)
+	col_bait.add_child(HSeparator.new())
+	
+	var magic_lbl = Label.new()
+	magic_lbl.text = "Bùa Ma Thuật (Chống tụt cấp)\nGiá: 💎 2 Ngọc Trai"
+	magic_lbl.add_theme_font_size_override("font_size", 22)
+	col_bait.add_child(magic_lbl)
+	
+	_btn_buy_charm_magic = _create_button("Mua (2 Ngọc Trai)", Color(0.3, 0.8, 0.9))
+	_btn_buy_charm_magic.pressed.connect(_buy_charm_magic)
+	col_bait.add_child(_btn_buy_charm_magic)
 	
 	# ==============================
 	# FOOTER
@@ -245,6 +278,39 @@ func _craft_bait_glow() -> void:
 	PlayerInventory.add_bait("bait_glow", 1)
 	AudioManager.play_sfx("ui_click")
 	_show_status("Đã chế tạo Mồi Phát Sáng!", Color.GREEN)
+	_refresh_inventory()
+
+func _buy_enhance_stone() -> void:
+	if GameManager.get_currency("gold") < 200:
+		_show_status("Không đủ 200 Vàng!", Color.RED)
+		return
+		
+	GameManager.spend_currency("gold", 200)
+	PlayerInventory.add_material("enhance_stone", 1)
+	AudioManager.play_sfx("ui_click")
+	_show_status("Đã mua 1 Đá Cường Hóa!", Color.GREEN)
+	_refresh_inventory()
+
+func _buy_charm_luck() -> void:
+	if GameManager.get_currency("gold") < 500:
+		_show_status("Không đủ 500 Vàng!", Color.RED)
+		return
+		
+	GameManager.spend_currency("gold", 500)
+	PlayerInventory.add_material("charm_luck", 1)
+	AudioManager.play_sfx("ui_click")
+	_show_status("Đã mua 1 Bùa May Mắn!", Color.GREEN)
+	_refresh_inventory()
+	
+func _buy_charm_magic() -> void:
+	if GameManager.get_currency("pearl") < 2:
+		_show_status("Không đủ 2 Ngọc Trai!", Color.RED)
+		return
+		
+	GameManager.spend_currency("pearl", 2)
+	PlayerInventory.add_material("charm_magic", 1)
+	AudioManager.play_sfx("ui_click")
+	_show_status("Đã mua 1 Bùa Ma Thuật!", Color.GREEN)
 	_refresh_inventory()
 
 func _show_status(msg: String, color: Color) -> void:

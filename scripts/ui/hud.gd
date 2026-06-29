@@ -19,6 +19,7 @@ signal open_shop()
 signal open_forge()
 signal open_upgrade()
 signal go_home()
+signal auto_fish_toggled(is_on: bool)
 
 const SCREEN_W := 1920.0
 const SCREEN_H := 1080.0
@@ -34,9 +35,12 @@ var _profile_name: Label
 var _gold_label:   Label
 var _gem_label:    Label
 var _btn_shop:     Button
-var _btn_forge:    Button
-var _btn_upgrade:  Button
+var _btn_upgrade_menu: MenuButton
 var _btn_home:     Button
+
+# --- Debug Panel ---
+var _btn_debug:    Button
+var _debug_panel:  PanelContainer
 
 # --- Bottom Left (Equip) ---
 var _btn_rod:  Button
@@ -44,8 +48,8 @@ var _btn_bait: Button
 var _bait_label: Label
 
 # --- Bottom Right (Action) ---
-var _btn_action_bg: ColorRect
 var _btn_action: Button
+var _btn_auto:   CheckButton
 var _btn_action_label: Label
 
 
@@ -162,31 +166,30 @@ func _build_ui() -> void:
 	_btn_shop.pressed.connect(func(): open_shop.emit())
 	top_right.add_child(_btn_shop)
 
-	_btn_forge = Button.new()
-	_btn_forge.position = Vector2(-900, 0)
-	_btn_forge.size = Vector2(140, 50)
-	_btn_forge.text = "🔨 RÈN"
-	_btn_forge.add_theme_font_size_override("font_size", 28)
-	_btn_forge.pressed.connect(func(): open_forge.emit())
-	top_right.add_child(_btn_forge)
-
-	_btn_upgrade = Button.new()
-	_btn_upgrade.position = Vector2(-1050, 0)
-	_btn_upgrade.size = Vector2(140, 50)
-	_btn_upgrade.text = "💪 TU LUYỆN"
-	_btn_upgrade.add_theme_font_size_override("font_size", 24)
-	_btn_upgrade.pressed.connect(func(): open_upgrade.emit())
-	top_right.add_child(_btn_upgrade)
+	_btn_upgrade_menu = MenuButton.new()
+	_btn_upgrade_menu.position = Vector2(-950, 0)
+	_btn_upgrade_menu.size = Vector2(180, 50)
+	_btn_upgrade_menu.text = "⬆️ NÂNG CẤP"
+	_btn_upgrade_menu.add_theme_font_size_override("font_size", 28)
+	var popup = _btn_upgrade_menu.get_popup()
+	popup.add_item("🔨 Lò Rèn", 0)
+	popup.add_item("💪 Tu Luyện (Nhân Vật)", 1)
+	popup.id_pressed.connect(_on_upgrade_menu_selected)
+	# Style the popup for better visibility
+	popup.add_theme_font_size_override("font_size", 28)
+	top_right.add_child(_btn_upgrade_menu)
 
 	# Nút quay về trang chủ
 	_btn_home = Button.new()
-	_btn_home.position = Vector2(-1220, 0)
+	_btn_home.position = Vector2(-1130, 0)
 	_btn_home.size = Vector2(160, 50)
 	_btn_home.text = "← Menu"
 	_btn_home.add_theme_font_size_override("font_size", 28)
 	_btn_home.modulate = Color(1.0, 0.75, 0.75)
 	_btn_home.pressed.connect(func(): go_home.emit())
 	top_right.add_child(_btn_home)
+	
+	_build_debug_panel(root)
 
 
 	
@@ -277,6 +280,17 @@ func _build_ui() -> void:
 		action_pressed.emit()
 	)
 	bot_right.add_child(_btn_action)
+	
+	_btn_auto = CheckButton.new()
+	_btn_auto.position = Vector2(-btn_size - 320, -100)
+	_btn_auto.size = Vector2(280, 60)
+	_btn_auto.text = "🤖 Tự Động (Auto)"
+	_btn_auto.add_theme_font_size_override("font_size", 24)
+	_btn_auto.add_theme_color_override("font_color", Color(0.6, 1.0, 0.6))
+	_btn_auto.add_theme_color_override("font_hover_color", Color(0.8, 1.0, 0.8))
+	_btn_auto.add_theme_color_override("font_pressed_color", Color(0.2, 1.0, 0.2))
+	_btn_auto.toggled.connect(func(is_on: bool): auto_fish_toggled.emit(is_on))
+	bot_right.add_child(_btn_auto)
 
 # =============================================
 # API HỖ TRỢ GAMEPLAY
@@ -312,8 +326,6 @@ func set_action_text(text: String, glow_color: Color = Color(0.9, 0.4, 0.1)) -> 
 func set_action_visible(is_visible: bool) -> void:
 	if _btn_action:
 		_btn_action.visible = is_visible
-	if _btn_action_bg:
-		_btn_action_bg.visible = is_visible
 
 func show_status(text: String, duration: float = 2.0, color: Color = Color.WHITE) -> void:
 	if _status_label:
@@ -372,6 +384,98 @@ func _fmt(n: int) -> String:
 	if n >= 1000:
 		return "%.1fK" % (n / 1000.0)
 	return str(n)
+
+
+# =============================================
+# UPDATE DỮ LIỆU
+# =============================================
+func update_currency(gold: int, pearl: int) -> void:
+	_gold_label.text = "🪙 " + str(gold)
+	_gem_label.text  = "💎 " + str(pearl)
+
+
+func _on_upgrade_menu_selected(id: int) -> void:
+	if id == 0:
+		open_forge.emit()
+	elif id == 1:
+		open_upgrade.emit()
+
+
+# =============================================
+# DEBUG PANEL
+# =============================================
+func _build_debug_panel(root: Control) -> void:
+	_btn_debug = Button.new()
+	_btn_debug.position = Vector2(20, 20)
+	_btn_debug.size = Vector2(60, 60)
+	_btn_debug.text = "⚙️"
+	_btn_debug.add_theme_font_size_override("font_size", 36)
+	_btn_debug.pressed.connect(func(): _debug_panel.visible = not _debug_panel.visible)
+	root.add_child(_btn_debug)
+	
+	_debug_panel = PanelContainer.new()
+	_debug_panel.position = Vector2(20, 90)
+	_debug_panel.visible = false
+	var style = StyleBoxFlat.new()
+	style.bg_color = Color(0.1, 0.1, 0.1, 0.9)
+	style.set_corner_radius_all(10)
+	_debug_panel.add_theme_stylebox_override("panel", style)
+	root.add_child(_debug_panel)
+	
+	var margin = MarginContainer.new()
+	margin.add_theme_constant_override("margin_left", 20)
+	margin.add_theme_constant_override("margin_right", 20)
+	margin.add_theme_constant_override("margin_top", 20)
+	margin.add_theme_constant_override("margin_bottom", 20)
+	_debug_panel.add_child(margin)
+	
+	var vbox = VBoxContainer.new()
+	margin.add_child(vbox)
+	
+	var title = Label.new()
+	title.text = "HACK GAME (TESTING)"
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.add_theme_font_size_override("font_size", 24)
+	title.add_theme_color_override("font_color", Color(1.0, 0.4, 0.4))
+	vbox.add_child(title)
+	vbox.add_child(HSeparator.new())
+	
+	_add_debug_btn(vbox, "+10,000 Vàng", func(): GameManager.add_currency("gold", 10000))
+	_add_debug_btn(vbox, "+100 Ngọc Trai", func(): GameManager.add_currency("pearl", 100))
+	_add_debug_btn(vbox, "+10 Đá Cường Hóa", func(): PlayerInventory.add_material("enhance_stone", 10))
+	_add_debug_btn(vbox, "+10 Bùa May Mắn", func(): PlayerInventory.add_material("charm_luck", 10))
+	_add_debug_btn(vbox, "+10 Bùa Ma Thuật", func(): PlayerInventory.add_material("charm_magic", 10))
+	
+	vbox.add_child(HSeparator.new())
+	
+	_add_debug_btn(vbox, "+1 Cấp Cần Câu", func():
+		var lv = PlayerInventory.current_rod_stats.get("level", 0)
+		if lv < 12:
+			PlayerInventory.current_rod_stats["level"] = lv + 1
+			EventBus.inventory_updated.emit()
+	)
+	_add_debug_btn(vbox, "-1 Cấp Cần Câu", func():
+		var lv = PlayerInventory.current_rod_stats.get("level", 0)
+		if lv > 0:
+			PlayerInventory.current_rod_stats["level"] = lv - 1
+			EventBus.inventory_updated.emit()
+	)
+	
+	vbox.add_child(HSeparator.new())
+	var btn_close = Button.new()
+	btn_close.text = "Đóng Bảng"
+	btn_close.pressed.connect(func(): _debug_panel.visible = false)
+	vbox.add_child(btn_close)
+
+func _add_debug_btn(parent: Node, text: String, callback: Callable) -> void:
+	var btn = Button.new()
+	btn.text = text
+	btn.add_theme_font_size_override("font_size", 20)
+	btn.pressed.connect(func(): 
+		callback.call()
+		show_status("Đã hack: " + text, 1.5, Color.GREEN)
+	)
+	parent.add_child(btn)
 
 
 # =============================================

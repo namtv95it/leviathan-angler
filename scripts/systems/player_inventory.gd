@@ -28,14 +28,19 @@ var bait_stock: Dictionary = {
 	"bait_lure_a":   0,
 }
 
+## Vật liệu cường hóa
+var materials: Dictionary = {
+	"enhance_stone": 0,
+	"charm_luck": 0,
+	"charm_magic": 0
+}
+
 ## ID các cần câu đang sở hữu
 var owned_rod_ids: Array[String] = ["rod_basic"]
 
-## Cấp độ nâng cấp của Cần Câu hiện tại
+## Cấp độ nâng cấp của Cần Câu hiện tại (+1 đến +12)
 var current_rod_stats: Dictionary = {
-	"power_lv": 0,
-	"flex_lv": 0,
-	"luck_lv": 0
+	"level": 0
 }
 
 
@@ -187,10 +192,29 @@ func owns_rod(rod_id: String) -> bool:
 
 
 func unlock_rod(rod_id: String) -> void:
-	if rod_id not in owned_rod_ids:
+	if not owned_rod_ids.has(rod_id):
 		owned_rod_ids.append(rod_id)
-		print("[PlayerInventory] Mở khóa cần: %s" % rod_id)
 		EventBus.inventory_updated.emit()
+
+
+# =============================================
+# VẬT LIỆU (MATERIALS)
+# =============================================
+
+func get_material_count(mat_id: String) -> int:
+	return materials.get(mat_id, 0)
+
+func add_material(mat_id: String, amount: int) -> void:
+	if amount <= 0: return
+	materials[mat_id] = materials.get(mat_id, 0) + amount
+	EventBus.inventory_updated.emit()
+
+func consume_material(mat_id: String, amount: int) -> bool:
+	if get_material_count(mat_id) >= amount:
+		materials[mat_id] -= amount
+		EventBus.inventory_updated.emit()
+		return true
+	return false
 
 
 # =============================================
@@ -202,27 +226,21 @@ func to_dict() -> Dictionary:
 		"fish_inventory": fish_inventory,
 		"bait_stock": bait_stock,
 		"owned_rod_ids": owned_rod_ids,
-		"current_rod_stats": current_rod_stats
+		"current_rod_stats": current_rod_stats,
+		"materials": materials
 	}
 
 func load_from_dict(data: Dictionary) -> void:
 	if data.has("fish_inventory"):
-		fish_inventory.clear()
-		for fish in data["fish_inventory"]:
-			fish_inventory.append(fish)
-	
+		fish_inventory.assign(data["fish_inventory"])
 	if data.has("bait_stock"):
-		bait_stock.clear()
-		bait_stock.merge(data["bait_stock"], true)
-		
+		bait_stock = data["bait_stock"]
 	if data.has("owned_rod_ids"):
-		owned_rod_ids.clear()
-		for rod_id in data["owned_rod_ids"]:
-			owned_rod_ids.append(rod_id)
-			
+		owned_rod_ids.assign(data["owned_rod_ids"])
 	if data.has("current_rod_stats"):
 		current_rod_stats.merge(data["current_rod_stats"], true)
+	if data.has("materials"):
+		materials.merge(data["materials"], true)
 	
 	print("[PlayerInventory] Đã load dữ liệu kho đồ.")
 	EventBus.inventory_updated.emit()
-

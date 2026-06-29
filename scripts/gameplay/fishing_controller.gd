@@ -61,6 +61,10 @@ var _hud: HUD = null
 @onready var shadow_layer  := $FishShadowLayer
 @onready var ui_layer      := get_node_or_null("UI")
 
+# --- Auto Fishing ---
+var _auto_fishing: bool = false
+var _auto_timer: float = 0.0
+
 
 const FishShadowScene = preload("res://scenes/gameplay/fish_shadow.tscn")
 const ShopScreenScene = preload("res://scenes/ui/shop_screen.tscn")
@@ -103,13 +107,22 @@ func _ready() -> void:
 	_hud.open_forge.connect(_on_hud_open_forge)
 	_hud.open_upgrade.connect(_on_hud_open_upgrade)
 	_hud.go_home.connect(_on_hud_go_home)
+	_hud.auto_fish_toggled.connect(_on_auto_fish_toggled)
 	
 	_set_state(Phase1State.IDLE)
 	print("[FishingController] Sẵn sàng.")
 
 	get_viewport().size_changed.connect(_on_viewport_size_changed)
 	_on_viewport_size_changed()
+	set_process(true)
 
+func _on_auto_fish_toggled(is_on: bool) -> void:
+	_auto_fishing = is_on
+	_auto_timer = 0.0
+	if is_on:
+		_hud.show_status("Đã Bật Chế Độ Auto", 1.5, Color.GREEN)
+	else:
+		_hud.show_status("Đã Tắt Auto", 1.5, Color.GRAY)
 
 func _on_viewport_size_changed() -> void:
 	var rod_node = get_node_or_null("FishingRod")
@@ -152,7 +165,33 @@ func _process(delta: float) -> void:
 			_process_waiting(delta)
 		Phase1State.BITE_WINDOW:
 			pass  ## Timing Bar tự xử lý qua _process nội bộ
+	
+	if _auto_fishing:
+		_handle_auto_fishing(delta)
 
+func _handle_auto_fishing(delta: float) -> void:
+	_auto_timer -= delta
+	if _auto_timer > 0: return
+	
+	match GameManager.current_state:
+		GameManager.GameState.FISHING_IDLE, GameManager.GameState.FISHING_CASTING, GameManager.GameState.FISHING_WAITING, GameManager.GameState.FISHING_TIMING:
+			match _state:
+				Phase1State.IDLE:
+					_on_hud_action_pressed()
+				Phase1State.WAITING, Phase1State.SHADOW_COMING:
+					pass
+				Phase1State.BITE_WINDOW:
+					if _timing_bar:
+						_on_timing_zone("red")
+		GameManager.GameState.FISHING_QTE:
+			if _swipe_qte:
+				_on_qte_completed(true)
+		GameManager.GameState.FISHING_MASH:
+			if _mash_btn:
+				_on_mash_completed(1.0)
+		GameManager.GameState.FISHING_RESULT:
+			if _result_screen:
+				_result_screen.closed.emit()
 
 # =============================================
 # NHẬN LỆNH TỪ HUD
@@ -306,9 +345,19 @@ func _on_cast_pressed() -> void:
 	if _state != Phase1State.IDLE:
 		return
 
-	if _selected_bait.is_empty():
-		_hud.show_status("Hãy chọn mồi trước!")
-		return
+	## KIỂM TRA MỒI
+	if _selected_bait.get("is_free", false) == false:
+		var stock = PlayerInventory.get_bait_count(_selected_bait.id)
+		if stock <= 0:
+			if _auto_fishing:
+				_hud.show_status("Hết mồi xịn! Tự động chuyển về mồi cơ bản.", 2.0, Color.YELLOW)
+				_select_bait_free()
+			else:
+				_hud.show_status("Hết mồi này rồi!", 1.5, Color.RED)
+				return
+		else:
+			PlayerInventory.consume_bait(_selected_bait.id)
+			_hud.update_bait_text(_selected_bait.display_name, stock - 1)
 
 	_set_state(Phase1State.CASTING)
 
@@ -438,6 +487,7 @@ func _spawn_fish_shadow() -> void:
 func _on_shadow_reached_float() -> void:
 	AudioManager.play_sfx("float_dip")
 	_set_state(Phase1State.BITE_WINDOW)
+	if _auto_fishing: _auto_timer = 0.5
 	_start_phase2()
 
 
@@ -503,6 +553,7 @@ func _on_timing_time_up() -> void:
 # PHASE 3: QTE SWIPE MŨI TÊN
 # =============================================
 func _start_phase3() -> void:
+	if _auto_fishing: _auto_timer = 1.0
 	_hud.set_action_visible(false) # Tạm ẩn nút kéo ở Phase vuốt
 	
 	var fish_data = _current_shadow.get_fish_data() if _current_shadow else null
@@ -523,7 +574,7 @@ func _start_phase3() -> void:
 	## Áp dụng Flexibility bonus từ cần câu
 	var rod: RodData = PlayerInventory.get_equipped_rod()
 	var flex_bonus: float = rod.get_flexibility_bonus() if rod else 0.0
-	flex_bonus += PlayerInventory.current_rod_stats.get("flex_lv", 0) * 0.15 # Mỗi cấp flex giảm 15% thời gian phạt/giúp vuốt dễ hơn
+	flex_bonus += PlayerInventory.current_rod_stats.get("level", 0) * 0.15 # Mỗi cấp cường hóa giảm 15% thời gian phạt/giúp vuốt dễ hơn
 	
 	## Áp dụng Phản Xạ từ Character Stats
 	var reflex_lv = GameManager.player_data.get("character_stats", {}).get("reflex_lv", 0)
@@ -557,6 +608,7 @@ func _on_qte_completed(success: bool) -> void:
 # PHASE 4: BUTTON MASH
 # =============================================
 func _start_phase4() -> void:
+	if _auto_fishing: _auto_timer = 1.5
 	GameManager.change_state(GameManager.GameState.FISHING_MASH)
 	EventBus.mash_started.emit(4.0)
 	
@@ -566,7 +618,7 @@ func _start_phase4() -> void:
 	## Áp dụng Power bonus từ cần câu
 	var rod: RodData = PlayerInventory.get_equipped_rod()
 	var power_bonus: float = rod.get_power_bonus() if rod else 0.0
-	power_bonus += PlayerInventory.current_rod_stats.get("power_lv", 0) * 0.20 # Mỗi cấp power tăng 20% lực spam
+	power_bonus += PlayerInventory.current_rod_stats.get("level", 0) * 0.20 # Mỗi cấp cường hóa tăng 20% lực spam
 	
 	## Áp dụng Thể Lực (Stamina) từ Character Stats
 	var stamina_lv = GameManager.player_data.get("character_stats", {}).get("stamina_lv", 0)
@@ -637,6 +689,11 @@ func _show_result() -> void:
 	if _quality_multiplier >= 2.0:
 		GameManager.add_currency("pearl", 1)
 		print("[FishingController] PERFECT STRIKE! +1 Ngọc Trai")
+		
+	## Rớt Đá Cường Hóa (15%)
+	if randf() <= 0.15:
+		PlayerInventory.add_material("enhance_stone", 1)
+		print("[FishingController] Nhặt được 1 Đá Cường Hóa!")
 
 	## Lưu weight vào session cho PlayerInventory đọc
 	GameManager.current_session["final_weight"] = weight
@@ -651,6 +708,7 @@ func _show_result() -> void:
 	add_child(_result_screen)
 	_result_screen.closed.connect(_on_result_closed)
 	_result_screen.show_result(fish_data, weight, gold, exp_amt, _quality_multiplier)
+	if _auto_fishing: _auto_timer = 2.0
 
 
 func _on_result_closed() -> void:
@@ -730,6 +788,8 @@ func _reset_to_idle() -> void:
 	_cleanup_node(_mash_btn);    _mash_btn     = null
 	_cleanup_node(_result_screen); _result_screen = null
 	_cleanup_shadow()
+	
+	if _auto_fishing: _auto_timer = 1.0
 	_hud.set_action_visible(true)
 
 	## Reset session vars
