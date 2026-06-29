@@ -68,7 +68,15 @@ func get_fish_by_rank(rank: String) -> Array:
 
 
 ## Chọn ngẫu nhiên 1 con cá phù hợp với tier mồi hiện tại
-func get_random_fish_for_bait(bait_tier: String):
+func get_random_fish_for_bait(bait_tier: String, luck_lv: int = 0):
+	# May mắn: Có tỷ lệ đôn tier mồi lên 1 bậc!
+	if luck_lv > 0 and randf() < (luck_lv * 0.05): # Max 25% tỷ lệ
+		if bait_tier == "free": bait_tier = "C"
+		elif bait_tier == "C": bait_tier = "B"
+		elif bait_tier == "B": bait_tier = "A"
+		elif bait_tier == "A": bait_tier = "S"
+		elif bait_tier == "S": bait_tier = "live"
+		
 	var eligible_ranks: Array = _get_eligible_ranks(bait_tier)
 	var eligible_fish: Array = []
 	for rank in eligible_ranks:

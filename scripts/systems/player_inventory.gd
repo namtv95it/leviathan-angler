@@ -29,7 +29,14 @@ var bait_stock: Dictionary = {
 }
 
 ## ID các cần câu đang sở hữu
-var owned_rod_ids: Array[String] = ["rod_basic", "rod_silver", "rod_gold"]
+var owned_rod_ids: Array[String] = ["rod_basic"]
+
+## Cấp độ nâng cấp của Cần Câu hiện tại
+var current_rod_stats: Dictionary = {
+	"power_lv": 0,
+	"flex_lv": 0,
+	"luck_lv": 0
+}
 
 
 func _ready() -> void:
@@ -94,6 +101,10 @@ func sell_all_fish() -> int:
 	var total_gold: int = 0
 	for fish in fish_inventory:
 		total_gold += fish.get("gold_value", 10)
+		
+	var haggle_lv = GameManager.player_data.get("character_stats", {}).get("haggling_lv", 0)
+	if haggle_lv > 0:
+		total_gold = int(total_gold * (1.0 + haggle_lv * 0.05))
 	
 	if total_gold > 0:
 		GameManager.add_currency("gold", total_gold)
@@ -101,6 +112,27 @@ func sell_all_fish() -> int:
 		EventBus.inventory_updated.emit()
 	
 	return total_gold
+
+
+func get_fish_count_by_rank(rank: String) -> int:
+	var count = 0
+	for f in fish_inventory:
+		if f.get("rank", "C") == rank: count += 1
+	return count
+
+
+func consume_fish_by_rank(rank: String, amount: int) -> bool:
+	if get_fish_count_by_rank(rank) < amount:
+		return false
+	var consumed = 0
+	for i in range(fish_inventory.size() - 1, -1, -1):
+		if fish_inventory[i].get("rank", "C") == rank:
+			fish_inventory.remove_at(i)
+			consumed += 1
+			if consumed >= amount:
+				break
+	EventBus.inventory_updated.emit()
+	return true
 
 
 # =============================================
@@ -169,7 +201,8 @@ func to_dict() -> Dictionary:
 	return {
 		"fish_inventory": fish_inventory,
 		"bait_stock": bait_stock,
-		"owned_rod_ids": owned_rod_ids
+		"owned_rod_ids": owned_rod_ids,
+		"current_rod_stats": current_rod_stats
 	}
 
 func load_from_dict(data: Dictionary) -> void:
@@ -186,6 +219,9 @@ func load_from_dict(data: Dictionary) -> void:
 		owned_rod_ids.clear()
 		for rod_id in data["owned_rod_ids"]:
 			owned_rod_ids.append(rod_id)
+			
+	if data.has("current_rod_stats"):
+		current_rod_stats.merge(data["current_rod_stats"], true)
 	
 	print("[PlayerInventory] Đã load dữ liệu kho đồ.")
 	EventBus.inventory_updated.emit()

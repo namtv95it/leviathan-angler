@@ -38,6 +38,11 @@ var player_data: Dictionary = {
 	"current_zone": "zone_1",
 	"equipped_rod": "rod_basic",
 	"equipped_bait": "bait_free",
+	"character_stats": {
+		"stamina_lv": 0,
+		"reflex_lv": 0,
+		"haggling_lv": 0
+	}
 }
 
 # === VONG LUP CAU CA HIEN TAI ===

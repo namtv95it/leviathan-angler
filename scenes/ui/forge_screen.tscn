@@ -1,0 +1,6 @@
+[gd_scene format=3 uid="uid://c5ls3463awfhs"]
+
+[ext_resource type="Script" path="res://scripts/ui/forge_screen.gd" id="1_forge"]
+
+[node name="ForgeScreen" type="CanvasLayer"]
+script = ExtResource("1_forge")

@@ -1,0 +1,6 @@
+[gd_scene format=3 uid="uid://cdwb86d0ut8lj"]
+
+[ext_resource type="Script" path="res://scripts/ui/upgrade_screen.gd" id="1_upg"]
+
+[node name="UpgradeScreen" type="CanvasLayer"]
+script = ExtResource("1_upg")

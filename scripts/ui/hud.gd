@@ -16,6 +16,8 @@ signal change_rod_pressed()
 signal change_bait_pressed()
 signal open_bait_selection()
 signal open_shop()
+signal open_forge()
+signal open_upgrade()
 signal go_home()
 
 const SCREEN_W := 1920.0
@@ -32,6 +34,8 @@ var _profile_name: Label
 var _gold_label:   Label
 var _gem_label:    Label
 var _btn_shop:     Button
+var _btn_forge:    Button
+var _btn_upgrade:  Button
 var _btn_home:     Button
 
 # --- Bottom Left (Equip) ---
@@ -158,9 +162,25 @@ func _build_ui() -> void:
 	_btn_shop.pressed.connect(func(): open_shop.emit())
 	top_right.add_child(_btn_shop)
 
+	_btn_forge = Button.new()
+	_btn_forge.position = Vector2(-900, 0)
+	_btn_forge.size = Vector2(140, 50)
+	_btn_forge.text = "🔨 RÈN"
+	_btn_forge.add_theme_font_size_override("font_size", 28)
+	_btn_forge.pressed.connect(func(): open_forge.emit())
+	top_right.add_child(_btn_forge)
+
+	_btn_upgrade = Button.new()
+	_btn_upgrade.position = Vector2(-1050, 0)
+	_btn_upgrade.size = Vector2(140, 50)
+	_btn_upgrade.text = "💪 TU LUYỆN"
+	_btn_upgrade.add_theme_font_size_override("font_size", 24)
+	_btn_upgrade.pressed.connect(func(): open_upgrade.emit())
+	top_right.add_child(_btn_upgrade)
+
 	# Nút quay về trang chủ
 	_btn_home = Button.new()
-	_btn_home.position = Vector2(-920, 0)
+	_btn_home.position = Vector2(-1220, 0)
 	_btn_home.size = Vector2(160, 50)
 	_btn_home.text = "← Menu"
 	_btn_home.add_theme_font_size_override("font_size", 28)

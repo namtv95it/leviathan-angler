@@ -64,6 +64,8 @@ var _hud: HUD = null
 
 const FishShadowScene = preload("res://scenes/gameplay/fish_shadow.tscn")
 const ShopScreenScene = preload("res://scenes/ui/shop_screen.tscn")
+const ForgeScreenScene = preload("res://scenes/ui/forge_screen.tscn")
+const UpgradeScreenScene = preload("res://scenes/ui/upgrade_screen.tscn")
 const BaitSelectionScreenScene = preload("res://scenes/ui/bait_selection_screen.tscn")
 const RodSelectionScreenScene = preload("res://scenes/ui/rod_selection_screen.tscn")
 
@@ -98,6 +100,8 @@ func _ready() -> void:
 	_hud.open_bait_selection.connect(_on_hud_open_bait_selection)
 	_hud.change_rod_pressed.connect(_on_hud_change_rod)
 	_hud.open_shop.connect(_on_hud_open_shop)
+	_hud.open_forge.connect(_on_hud_open_forge)
+	_hud.open_upgrade.connect(_on_hud_open_upgrade)
 	_hud.go_home.connect(_on_hud_go_home)
 	
 	_set_state(Phase1State.IDLE)
@@ -206,6 +210,20 @@ func _on_hud_open_shop() -> void:
 		return
 	var shop = ShopScreenScene.instantiate()
 	add_child(shop)
+
+func _on_hud_open_forge() -> void:
+	if _state != Phase1State.IDLE:
+		_hud.show_status("Đang bận câu cá!", 2.0, Color.RED)
+		return
+	var forge = ForgeScreenScene.instantiate()
+	add_child(forge)
+
+func _on_hud_open_upgrade() -> void:
+	if _state != Phase1State.IDLE:
+		_hud.show_status("Đang bận câu cá!", 2.0, Color.RED)
+		return
+	var upg = UpgradeScreenScene.instantiate()
+	add_child(upg)
 
 func _on_hud_go_home() -> void:
 	SaveManager.save_game()
@@ -387,7 +405,8 @@ func _process_waiting(delta: float) -> void:
 
 
 func _spawn_fish_shadow() -> void:
-	var fish_data = FishDatabase.get_random_fish_for_bait(_selected_bait.get("tier", "free"))
+	var luck_lv = PlayerInventory.current_rod_stats.get("luck_lv", 0)
+	var fish_data = FishDatabase.get_random_fish_for_bait(_selected_bait.get("tier", "free"), luck_lv)
 	if fish_data == null:
 		push_warning("[FishingController] Không tìm được dữ liệu cá!")
 		_reset_to_idle()
@@ -504,6 +523,11 @@ func _start_phase3() -> void:
 	## Áp dụng Flexibility bonus từ cần câu
 	var rod: RodData = PlayerInventory.get_equipped_rod()
 	var flex_bonus: float = rod.get_flexibility_bonus() if rod else 0.0
+	flex_bonus += PlayerInventory.current_rod_stats.get("flex_lv", 0) * 0.15 # Mỗi cấp flex giảm 15% thời gian phạt/giúp vuốt dễ hơn
+	
+	## Áp dụng Phản Xạ từ Character Stats
+	var reflex_lv = GameManager.player_data.get("character_stats", {}).get("reflex_lv", 0)
+	flex_bonus += reflex_lv * 0.20 # Mỗi cấp Phản Xạ giúp dễ vuốt hơn 20%
 
 	GameManager.change_state(GameManager.GameState.FISHING_QTE)
 	EventBus.qte_started.emit([])
@@ -542,6 +566,11 @@ func _start_phase4() -> void:
 	## Áp dụng Power bonus từ cần câu
 	var rod: RodData = PlayerInventory.get_equipped_rod()
 	var power_bonus: float = rod.get_power_bonus() if rod else 0.0
+	power_bonus += PlayerInventory.current_rod_stats.get("power_lv", 0) * 0.20 # Mỗi cấp power tăng 20% lực spam
+	
+	## Áp dụng Thể Lực (Stamina) từ Character Stats
+	var stamina_lv = GameManager.player_data.get("character_stats", {}).get("stamina_lv", 0)
+	power_bonus += stamina_lv * 0.25 # Mỗi cấp Thể lực tăng 25% lực spam
 
 	_mash_btn = MashButton.new()
 	add_child(_mash_btn)

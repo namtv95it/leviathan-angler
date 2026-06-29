@@ -83,5 +83,14 @@ func _migrate_save(old_data: Dictionary) -> Dictionary:
 	# Vi du: neu v0 -> v1, them truong moi
 	if old_data.get("version", 0) < 1:
 		old_data.get_or_add("player", {})["pearl"] = 0
+		
+	# Migration cho character_stats (Sprint 3.6)
+	if old_data.has("player") and not old_data["player"].has("character_stats"):
+		old_data["player"]["character_stats"] = {
+			"stamina_lv": 0,
+			"reflex_lv": 0,
+			"haggling_lv": 0
+		}
+		
 	old_data["version"] = SAVE_VERSION
 	return old_data
