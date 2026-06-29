@@ -601,13 +601,16 @@ func _show_result() -> void:
 		exp_amt = int(exp_amt * 1.5)
 
 	## Trao phần thưởng
-	GameManager.add_currency("gold", gold)
+	## (Đã sửa ở Sprint 3: Không cộng Vàng trực tiếp nữa, người chơi phải vào Cửa hàng để bán cá)
 	GameManager.add_exp(exp_amt)
 
 	## Pearl cho Perfect Strike (vùng Đỏ)
 	if _quality_multiplier >= 2.0:
 		GameManager.add_currency("pearl", 1)
 		print("[FishingController] PERFECT STRIKE! +1 Ngọc Trai")
+
+	## Lưu weight vào session cho PlayerInventory đọc
+	GameManager.current_session["final_weight"] = weight
 
 	## Emit signal
 	EventBus.fish_caught.emit(fish_data)

@@ -20,7 +20,7 @@ func save_game() -> void:
 		"version": SAVE_VERSION,
 		"timestamp": Time.get_unix_time_from_system(),
 		"player": GameManager.player_data,
-		## Sau nay them: inventory, aquarium, collection...
+		"inventory": PlayerInventory.to_dict()
 	}
 
 	var json_string := JSON.stringify(save_dict, "\t")  # "\t" = format dep de doc
@@ -64,6 +64,10 @@ func load_game() -> bool:
 	# Nap du lieu vao GameManager
 	if save_dict.has("player"):
 		GameManager.player_data.merge(save_dict["player"], true)
+		
+	# Nap du lieu vao PlayerInventory
+	if save_dict.has("inventory"):
+		PlayerInventory.load_from_dict(save_dict["inventory"])
 
 	print("[SaveManager] Da tai game. Level: ", GameManager.player_data.get("level", 1))
 	return true

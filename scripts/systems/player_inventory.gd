@@ -158,3 +158,35 @@ func unlock_rod(rod_id: String) -> void:
 	if rod_id not in owned_rod_ids:
 		owned_rod_ids.append(rod_id)
 		print("[PlayerInventory] Mở khóa cần: %s" % rod_id)
+		EventBus.inventory_updated.emit()
+
+
+# =============================================
+# SAVE / LOAD DỮ LIỆU
+# =============================================
+
+func to_dict() -> Dictionary:
+	return {
+		"fish_inventory": fish_inventory,
+		"bait_stock": bait_stock,
+		"owned_rod_ids": owned_rod_ids
+	}
+
+func load_from_dict(data: Dictionary) -> void:
+	if data.has("fish_inventory"):
+		fish_inventory.clear()
+		for fish in data["fish_inventory"]:
+			fish_inventory.append(fish)
+	
+	if data.has("bait_stock"):
+		bait_stock.clear()
+		bait_stock.merge(data["bait_stock"], true)
+		
+	if data.has("owned_rod_ids"):
+		owned_rod_ids.clear()
+		for rod_id in data["owned_rod_ids"]:
+			owned_rod_ids.append(rod_id)
+	
+	print("[PlayerInventory] Đã load dữ liệu kho đồ.")
+	EventBus.inventory_updated.emit()
+

@@ -198,7 +198,7 @@ func _build_ui() -> void:
 	btn_inv.add_theme_stylebox_override("normal", style_sub_btn)
 	btn_inv.add_theme_stylebox_override("disabled", style_sub_btn)
 	btn_inv.add_theme_font_size_override("font_size", 38)
-	btn_inv.disabled = true   ## Sprint 3
+	btn_inv.pressed.connect(_on_inv_pressed)
 	row.add_child(btn_inv)
 
 	var btn_shop := Button.new()
@@ -207,7 +207,7 @@ func _build_ui() -> void:
 	btn_shop.add_theme_stylebox_override("normal", style_sub_btn)
 	btn_shop.add_theme_stylebox_override("disabled", style_sub_btn)
 	btn_shop.add_theme_font_size_override("font_size", 38)
-	btn_shop.disabled = true  ## Sprint 3
+	btn_shop.pressed.connect(_on_shop_pressed)
 	row.add_child(btn_shop)
 
 	## Version
@@ -273,6 +273,22 @@ func _on_play_pressed() -> void:
 	tw.tween_callback(func():
 		get_tree().change_scene_to_file("res://scenes/gameplay/fishing_phase1.tscn")
 	)
+
+const INVENTORY_SCENE = preload("res://scenes/ui/inventory_screen.tscn")
+const SHOP_SCENE = preload("res://scenes/ui/shop_screen.tscn")
+
+func _on_inv_pressed() -> void:
+	AudioManager.play_sfx("ui_click")
+	var inv = INVENTORY_SCENE.instantiate()
+	add_child(inv)
+	inv.inventory_closed.connect(_refresh_player_stats) # Refresh tiền sau khi bán cá/mua đồ (nếu có)
+
+func _on_shop_pressed() -> void:
+	AudioManager.play_sfx("ui_click")
+	var shop = SHOP_SCENE.instantiate()
+	add_child(shop)
+	shop.shop_closed.connect(_refresh_player_stats)
+
 
 
 func _refresh_player_stats() -> void:
