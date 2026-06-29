@@ -202,17 +202,17 @@ func _build_ui() -> void:
 	# --- BOTTOM LEFT: EQUIPS ---
 	var bot_left := Control.new()
 	bot_left.set_anchors_preset(Control.PRESET_BOTTOM_LEFT)
-	bot_left.position = Vector2(100, -100)
+	bot_left.position = Vector2(100, -150) # Di chuyển lên trên một chút
 	bot_left.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	root.add_child(bot_left)
 	
 	# Đổi cần câu
 	_btn_rod = Button.new()
 	_btn_rod.position = Vector2(0, -320)
-	_btn_rod.size = Vector2(140, 140)
-	_btn_rod.pivot_offset = Vector2(70, 70)
+	_btn_rod.size = Vector2(160, 160) # Tăng kích thước
+	_btn_rod.pivot_offset = Vector2(80, 80)
 	_btn_rod.text = "🎣"
-	_btn_rod.add_theme_font_size_override("font_size", 70)
+	_btn_rod.add_theme_font_size_override("font_size", 80)
 	_btn_rod.pressed.connect(func(): change_rod_pressed.emit())
 	bot_left.add_child(_btn_rod)
 	
@@ -226,16 +226,16 @@ func _build_ui() -> void:
 
 	# Đổi mồi câu
 	_btn_bait = Button.new()
-	_btn_bait.position = Vector2(0, -140)
-	_btn_bait.size = Vector2(140, 140)
-	_btn_bait.pivot_offset = Vector2(70, 70)
+	_btn_bait.position = Vector2(0, -140) # Đẩy lên trên so với text của cần câu
+	_btn_bait.size = Vector2(160, 160) # Tăng kích thước
+	_btn_bait.pivot_offset = Vector2(80, 80)
 	_btn_bait.text = "🪱"
-	_btn_bait.add_theme_font_size_override("font_size", 70)
+	_btn_bait.add_theme_font_size_override("font_size", 80)
 	_btn_bait.pressed.connect(func(): open_bait_selection.emit())
 	bot_left.add_child(_btn_bait)
 	
 	_bait_label = Label.new()
-	_bait_label.position = Vector2(-50, 10)
+	_bait_label.position = Vector2(-40, 30) # Căn chỉnh text mồi câu xuống dưới nút
 	_bait_label.size = Vector2(240, 30)
 	_bait_label.text = "Đổi mồi câu"
 	_bait_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -256,7 +256,7 @@ func _build_ui() -> void:
 	# The real button (Circular Button with Text)
 	_btn_action = Button.new()
 	var btn_size = 280.0
-	_btn_action.position = Vector2(-btn_size - 80, -btn_size - 80)
+	_btn_action.position = Vector2(-btn_size - 120, -btn_size - 120) # Di chuyển lên trên và sang trái 1 ít
 	_btn_action.size = Vector2(btn_size, btn_size)
 	_btn_action.pivot_offset = Vector2(btn_size/2, btn_size/2)
 	
@@ -276,7 +276,7 @@ func _build_ui() -> void:
 	bot_right.add_child(_btn_action)
 	
 	_btn_auto = CheckButton.new()
-	_btn_auto.position = Vector2(-btn_size - 360, -140)
+	_btn_auto.position = Vector2(-btn_size - 400, -180) # Đẩy thêm sang trái và lên trên
 	_btn_auto.size = Vector2(280, 60)
 	_btn_auto.text = "🤖 Tự Động (Auto)"
 	_btn_auto.add_theme_font_size_override("font_size", 24)

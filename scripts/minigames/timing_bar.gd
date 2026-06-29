@@ -19,9 +19,9 @@ const BAR_W := 1000.0
 const BAR_H := 40.0
 
 # Kích thước từng vùng (từ trái qua phải giống ảnh)
-const GREEN_PX  := 750.0
-const YELLOW_PX := 200.0
-const RED_PX    := 50.0
+var green_px  := 750.0
+var yellow_px := 200.0
+var red_px    := 50.0
 
 # Tốc độ
 const BASE_SPEED := 0.45  ## Giảm tốc độ để dễ bấm hơn
@@ -32,8 +32,7 @@ var _t: float = 0.0          ## 0.0 (trái) -> 1.0 (phải)
 var _dir: float = 1.0        ## 1.0 = đi phải, -1.0 = đi trái
 var _active: bool = false
 var _speed_mult: float = 1.0
-var _is_live_bait: bool = false
-var _live_reverse_timer: float = 0.0
+var _base_speed_mult: float = 1.0
 var _traversals: int = 0
 
 # === NODES ===
@@ -49,15 +48,12 @@ func _ready() -> void:
 	visible = false
 
 
-func activate(is_live: bool, speed_bonus: float = 0.0) -> void:
+func activate(speed_bonus: float = 0.0) -> void:
 	_t = 0.0
 	_dir = 1.0
 	_traversals = 0
-	_is_live_bait = is_live
-	_speed_mult = 1.0 + speed_bonus
-	
-	if _live_bait_label:
-		_live_bait_label.text = "Cá Mồi Vùng Vẫy!" if is_live else ""
+	_base_speed_mult = 1.0 + speed_bonus
+	_speed_mult = _base_speed_mult
 	
 	if _chuan_xac_label:
 		_chuan_xac_label.visible = false
@@ -81,13 +77,6 @@ func _process(delta: float) -> void:
 		return
 
 	_t += _dir * BASE_SPEED * _speed_mult * delta
-
-	if _is_live_bait:
-		_live_reverse_timer -= delta
-		if _live_reverse_timer <= 0.0:
-			_live_reverse_timer = randf_range(0.8, 2.0)
-			if randf() < 0.35:
-				_dir *= -1.0
 
 	if _t >= 1.0:
 		_t = 1.0
@@ -116,20 +105,21 @@ func trigger_action() -> void:
 		return
 	_active = false
 	
-	var zone := _get_zone()
+	var zone := _check_zone()
 	if zone == "red" and _chuan_xac_label:
 		_chuan_xac_label.visible = true
 		
 	zone_tapped.emit(zone)
 
 
-func _get_zone() -> String:
-	var pos_x := _t * BAR_W
-	if pos_x >= GREEN_PX + YELLOW_PX:
-		return "red"
-	elif pos_x >= GREEN_PX:
+func _check_zone() -> String:
+	var px = _t * BAR_W
+	if px <= green_px:
+		return "green"
+	elif px <= green_px + yellow_px:
 		return "yellow"
-	return "green"
+	else:
+		return "red"
 
 
 func _update_pointer_pos() -> void:
@@ -148,6 +138,7 @@ func _update_rounds_label() -> void:
 # =============================================
 func _build_ui() -> void:
 	var root := Control.new()
+	root.name = "Root"
 	root.set_anchors_preset(Control.PRESET_FULL_RECT)
 	root.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(root)
@@ -157,8 +148,8 @@ func _build_ui() -> void:
 	vbox.set_anchors_preset(Control.PRESET_CENTER_TOP)
 	vbox.offset_left = -BAR_W / 2
 	vbox.offset_right = BAR_W / 2
-	vbox.offset_top = 160
-	vbox.offset_bottom = 360
+	vbox.offset_top = 220
+	vbox.offset_bottom = 420
 	vbox.add_theme_constant_override("separation", 10)
 	vbox.alignment = BoxContainer.ALIGNMENT_CENTER
 	vbox.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -171,11 +162,11 @@ func _build_ui() -> void:
 	top_info.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	vbox.add_child(top_info)
 
-	_live_bait_label = _add_label(top_info, "", 24, Color(1.0, 0.5, 0.2))
 	_rounds_label = _add_label(top_info, "Vòng: 2", 24, Color(0.8, 0.8, 0.8))
 
 	# --- Bar container ---
 	var bar_host := Control.new()
+	bar_host.name = "BarContainer"
 	bar_host.custom_minimum_size = Vector2(BAR_W, BAR_H + 40.0)
 	bar_host.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	vbox.add_child(bar_host)
@@ -191,30 +182,45 @@ func _build_bar(host: Control) -> void:
 	frame.color = Color(0.8, 0.7, 0.3)
 	host.add_child(frame)
 	
-	var frame_inner := ColorRect.new()
-	frame_inner.size = Vector2(BAR_W, BAR_H)
-	frame_inner.position = Vector2(0, 10)
-	frame_inner.color = Color(0.1, 0.1, 0.1)
-	host.add_child(frame_inner)
+	var bar_bg = ColorRect.new()
+	bar_bg.name = "BarBg"
+	bar_bg.size = Vector2(BAR_W, BAR_H)
+	bar_bg.position = Vector2(0, 10)
+	bar_bg.color = Color(0.1, 0.1, 0.1)
+	host.add_child(bar_bg)
 
-	# Các vùng màu
-	var x := 0.0
-	_add_zone(host, x, GREEN_PX,  Color(0.2, 0.5, 0.15, 1.0)) # Xanh lá đậm  
-	x += GREEN_PX
-	_add_zone(host, x, YELLOW_PX, Color(0.85, 0.65, 0.1, 1.0)) # Vàng   
-	x += YELLOW_PX
-	_add_zone(host, x, RED_PX,    Color(0.85, 0.15, 0.15, 1.0)) # Đỏ 
+	# Vẽ 3 vùng (Green, Yellow, Red)
+	var r_green = ColorRect.new()
+	r_green.name = "ZoneGreen"
+	r_green.color = Color(0.2, 0.5, 0.15, 1.0)
+	r_green.size = Vector2(green_px, BAR_H)
+	r_green.position = Vector2(0, 0)
+	bar_bg.add_child(r_green)
+	
+	var r_yellow = ColorRect.new()
+	r_yellow.name = "ZoneYellow"
+	r_yellow.color = Color(0.85, 0.65, 0.1, 1.0)
+	r_yellow.size = Vector2(yellow_px, BAR_H)
+	r_yellow.position = Vector2(green_px, 0)
+	bar_bg.add_child(r_yellow)
+	
+	var r_red = ColorRect.new()
+	r_red.name = "ZoneRed"
+	r_red.color = Color(0.85, 0.15, 0.15, 1.0)
+	r_red.size = Vector2(red_px, BAR_H)
+	r_red.position = Vector2(green_px + yellow_px, 0)
+	bar_bg.add_child(r_red)
 
 	# Điểm nhấn Diamond Marker Xanh lơ (Bên trái và điểm nối Xanh-Vàng)
 	_add_diamond(host, 0, 10 + BAR_H/2)
-	_add_diamond(host, GREEN_PX, 10 + BAR_H/2)
+	_add_diamond(host, green_px, 10 + BAR_H/2)
 
 	# "CHUẨN XÁC!" text (Nằm dưới vùng màu đỏ)
 	_chuan_xac_label = Label.new()
 	_chuan_xac_label.text = "CHUẨN XÁC!"
 	_chuan_xac_label.add_theme_font_size_override("font_size", 22)
 	_chuan_xac_label.add_theme_color_override("font_color", Color(1.0, 0.4, 0.4))
-	_chuan_xac_label.position = Vector2(GREEN_PX + YELLOW_PX - 20, 10 + BAR_H + 5)
+	_chuan_xac_label.position = Vector2(green_px + yellow_px - 20, 10 + BAR_H + 5)
 	_chuan_xac_label.visible = false
 	host.add_child(_chuan_xac_label)
 

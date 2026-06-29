@@ -68,20 +68,27 @@ func get_fish_by_rank(rank: String) -> Array:
 
 
 ## Chọn ngẫu nhiên 1 con cá phù hợp với tier mồi hiện tại
-func get_random_fish_for_bait(bait_tier: String, luck_lv: int = 0):
-	# May mắn: Có tỷ lệ đôn tier mồi lên 1 bậc!
-	if luck_lv > 0 and randf() < (luck_lv * 0.05): # Max 25% tỷ lệ
-		if bait_tier == "free": bait_tier = "C"
-		elif bait_tier == "C": bait_tier = "B"
-		elif bait_tier == "B": bait_tier = "A"
-		elif bait_tier == "A": bait_tier = "S"
-		elif bait_tier == "S": bait_tier = "live"
-		elif bait_tier == "live": bait_tier = "glow"
+func get_random_fish_for_bait(bait_tier: String):
+	var weights = _get_rank_weights(bait_tier)
+	
+	# Tính tổng trọng số
+	var total_weight: float = 0.0
+	for w in weights.values():
+		total_weight += w
 		
-	var eligible_ranks: Array = _get_eligible_ranks(bait_tier)
-	var eligible_fish: Array = []
-	for rank in eligible_ranks:
-		eligible_fish.append_array(get_fish_by_rank(rank))
+	var roll = randf() * total_weight
+	var chosen_rank = "C"
+	var current_sum: float = 0.0
+	
+	# Chọn Rank dựa trên trọng số
+	for rank in weights.keys():
+		current_sum += weights[rank]
+		if roll <= current_sum:
+			chosen_rank = rank
+			break
+			
+	var eligible_fish: Array = get_fish_by_rank(chosen_rank)
+	
 	if eligible_fish.is_empty():
 		return _fish_db.values().front() if not _fish_db.is_empty() else null
 	return eligible_fish.pick_random()
@@ -118,16 +125,13 @@ func _fish_rank(fish) -> String:
 	return "C"
 
 
-func _get_eligible_ranks(bait_tier: String) -> Array:
+func _get_rank_weights(bait_tier: String) -> Dictionary:
 	match bait_tier:
-		"free": return ["C"]
-		"C":    return ["C", "B"]
-		"B":    return ["B", "A"]
-		"A":    return ["A", "S"]
-		"S":    return ["S", "SS"]
-		"live": return ["A", "S", "SS"]
-		"glow": return ["S", "SS"]
-		_:      return ["C"]
+		"free": return {"C": 75.0, "B": 20.0, "A": 4.5, "S": 0.5, "SS": 0.0}
+		"C":    return {"C": 40.0, "B": 40.0, "A": 15.0, "S": 5.0, "SS": 0.0}
+		"live": return {"C": 10.0, "B": 20.0, "A": 45.0, "S": 20.0, "SS": 5.0}
+		"glow": return {"C": 0.0,  "B": 5.0,  "A": 20.0, "S": 50.0, "SS": 25.0}
+		_:      return {"C": 100.0}
 
 
 # =============================================

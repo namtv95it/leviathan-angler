@@ -257,13 +257,13 @@ func _refresh_inventory() -> void:
 		dex[fid]["total_gold"] += f_val
 		
 	var haggle_lv = GameManager.player_data.get("character_stats", {}).get("haggling_lv", 0)
-	if haggle_lv > 0:
-		total_gold = int(total_gold * (1.0 + haggle_lv * 0.05))
+	var mult = 1.0 + (haggle_lv * 0.05) + PlayerInventory.get_rod_gold_multiplier()
+	total_gold = int(total_gold * mult)
 		
 	if total_gold > 0:
 		_sell_all_btn.text = "BÁN TẤT CẢ (🪙 %d)" % total_gold
-		if haggle_lv > 0:
-			_sell_all_btn.text += " (+%d%% Buff)" % (haggle_lv * 5)
+		if mult > 1.0:
+			_sell_all_btn.text += " (+%d%% Buff)" % int((mult - 1.0) * 100)
 	else:
 		_sell_all_btn.text = "BÁN TẤT CẢ CÁ"
 	_sell_all_btn.disabled = (fish_list.size() == 0)
@@ -277,8 +277,7 @@ func _refresh_inventory() -> void:
 		for fid in dex.keys():
 			var data = dex[fid]
 			var f_total_gold = data["total_gold"]
-			if haggle_lv > 0:
-				f_total_gold = int(f_total_gold * (1.0 + haggle_lv * 0.05))
+			f_total_gold = int(f_total_gold * mult)
 				
 			var info_txt = "SL: %d\nGiá trị: 🪙 %d" % [data["count"], f_total_gold]
 			var sell_callable = func(): _on_sell_fish(fid)

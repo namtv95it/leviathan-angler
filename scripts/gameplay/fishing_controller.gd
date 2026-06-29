@@ -276,9 +276,10 @@ func _select_bait_free() -> void:
 		_selected_bait = (load(path) as BaitData).to_dict()
 	else:
 		_selected_bait = {
-			"id": "bait_free", "name": "Mồi Cơ Bản", "tier": "free",
-			"pointer_speed_bonus": 0.0, "is_live": false, "zone_bonus": "",
-		}
+		"id": "bait_free",
+		"name": "Mồi Cơ Bản",
+		"tier": "free",
+	}
 	EventBus.bait_selected.emit(_selected_bait)
 
 
@@ -289,7 +290,6 @@ func _select_bait_c() -> void:
 	else:
 		_selected_bait = {
 			"id": "bait_lure_c", "name": "Mồi Thường", "tier": "C",
-			"pointer_speed_bonus": 0.0, "is_live": false, "zone_bonus": "green",
 		}
 	EventBus.bait_selected.emit(_selected_bait)
 
@@ -299,9 +299,6 @@ func _select_bait_live() -> void:
 		"id": "bait_live",
 		"name": "Mồi Sống",
 		"tier": "live",
-		"pointer_speed_bonus": LIVE_BAIT_SPEED_BONUS,
-		"is_live": true,
-		"zone_bonus": "",
 	}
 	_update_float_visual()
 	EventBus.bait_selected.emit(_selected_bait)
@@ -315,9 +312,6 @@ func _select_bait_glow() -> void:
 			"id": "bait_glow",
 			"name": "Mồi Phát Sáng",
 			"tier": "glow",
-			"pointer_speed_bonus": LIVE_BAIT_SPEED_BONUS,
-			"is_live": true,
-			"zone_bonus": "",
 		}
 	_update_float_visual()
 	EventBus.bait_selected.emit(_selected_bait)
@@ -479,8 +473,7 @@ func _process_waiting(delta: float) -> void:
 
 
 func _spawn_fish_shadow() -> void:
-	var luck_lv = PlayerInventory.current_rod_stats.get("luck_lv", 0)
-	var fish_data = FishDatabase.get_random_fish_for_bait(_selected_bait.get("tier", "free"), luck_lv)
+	var fish_data = FishDatabase.get_random_fish_for_bait(_selected_bait.get("tier", "free"))
 	if fish_data == null:
 		push_warning("[FishingController] Không tìm được dữ liệu cá!")
 		_reset_to_idle()
@@ -522,8 +515,7 @@ func _on_shadow_reached_float() -> void:
 func _start_phase2() -> void:
 	EventBus.timing_window_started.emit()
 
-	var is_live: bool = _selected_bait.get("is_live", false)
-	var speed_bonus: float = _selected_bait.get("pointer_speed_bonus", 0.0)
+	var speed_bonus: float = 0.0
 
 	## Cá hiếm cũng ảnh hưởng tốc độ
 	var fish_data = _current_shadow.get_fish_data() if _current_shadow else null
@@ -532,11 +524,24 @@ func _start_phase2() -> void:
 	elif fish_data is Dictionary:
 		speed_bonus += (float(fish_data.get("bite_speed_multiplier", 1.0)) - 1.0)
 
+	## Cần câu xịn và cấp độ cao giúp thanh chạy chậm hơn
+	var rod: RodData = PlayerInventory.get_equipped_rod()
+	if rod:
+		# get_flexibility_bonus() trả về từ 0.0 -> 2.0. Nhân với 0.1 để giảm tối đa 20% tốc độ
+		speed_bonus -= rod.get_flexibility_bonus() * 0.1
+	
+	var rod_lv = PlayerInventory.current_rod_stats.get("level", 0)
+	speed_bonus -= (rod_lv * 0.02) # Mỗi cấp giảm thêm 2% tốc độ
+	
+	# Đảm bảo tốc độ không bị giảm quá sâu (giới hạn tối thiểu là tốc độ 40% so với gốc)
+	if speed_bonus < -0.60:
+		speed_bonus = -0.60
+
 	_timing_bar = TimingBar.new()
 	add_child(_timing_bar)
 	_timing_bar.zone_tapped.connect(_on_timing_zone)
 	_timing_bar.time_up.connect(_on_timing_time_up)
-	_timing_bar.activate(is_live, speed_bonus)
+	_timing_bar.activate(speed_bonus)
 
 
 func _on_timing_zone(zone: String) -> void:
@@ -580,6 +585,7 @@ func _on_timing_time_up() -> void:
 func _start_phase3() -> void:
 	if _auto_fishing: _auto_timer = 1.0
 	_hud.set_action_visible(false) # Tạm ẩn nút kéo ở Phase vuốt
+	_hud.show_status("", 0) # Xoá thông báo PERFECT/GOOD từ Phase 2 để tránh đè chữ "GIẰNG CO"
 	
 	var fish_data = _current_shadow.get_fish_data() if _current_shadow else null
 	var arrow_count := 4
@@ -695,7 +701,7 @@ func _show_result() -> void:
 	elif fish_data is Dictionary:
 		var w_min: float = fish_data.get("weight_min", 0.1)
 		var w_max: float = fish_data.get("weight_max", 1.0)
-		weight  = lerpf(w_min, w_max, _mash_fill)
+		weight  = randf_range(w_min, w_max)
 		var ratio: float = (weight - w_min) / maxf(w_max - w_min, 0.001)
 		gold    = int(fish_data.get("gold_value", 10) * (0.5 + ratio * 0.5) * _quality_multiplier)
 		exp_amt = int(fish_data.get("exp_value", 5)  * (0.5 + ratio * 0.5) * _quality_multiplier)

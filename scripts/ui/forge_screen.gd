@@ -12,6 +12,7 @@ var _status_label: Label
 var _lbl_current_rod: Label
 var _lbl_stone_inventory: Label
 var _lbl_charm_inventory: Label
+var _lbl_next_effect: Label
 
 var _lbl_stone_count: Label
 var _btn_stone_minus: Button
@@ -95,6 +96,12 @@ func _build_ui() -> void:
 	_lbl_current_rod.add_theme_font_size_override("font_size", 36)
 	_lbl_current_rod.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	margin_item.add_child(_lbl_current_rod)
+	
+	_lbl_next_effect = Label.new()
+	_lbl_next_effect.add_theme_font_size_override("font_size", 20)
+	_lbl_next_effect.add_theme_color_override("font_color", Color(0.7, 1.0, 0.7))
+	_lbl_next_effect.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	margin_item.add_child(_lbl_next_effect)
 	
 	# KHO VẬT LIỆU
 	var hbox_inv = HBoxContainer.new()
@@ -273,9 +280,21 @@ func _refresh_ui() -> void:
 	if lv >= 12:
 		_lbl_current_rod.add_theme_color_override("font_color", Color(1.0, 0.4, 0.4))
 		_lbl_current_rod.text += " (MAX)"
+		_lbl_next_effect.text = "Đã đạt cấp độ tối đa!"
 		_btn_forge.disabled = true
 	else:
 		_lbl_current_rod.add_theme_color_override("font_color", Color(1.0, 1.0, 1.0))
+		
+		var next_lv = int(lv) + 1
+		var effect_text = "Hiệu ứng Cấp %d: -2%% Tốc độ thanh chạy" % next_lv
+		# Cứ mỗi 3 cấp (3, 6, 9, 12) sẽ có buff đột phá
+		if next_lv % 3 == 0:
+			effect_text += " | ĐỘT PHÁ: +10% Tiền Bán Cá!"
+			_lbl_next_effect.add_theme_color_override("font_color", Color(1.0, 0.8, 0.2)) # Màu vàng cho đột phá
+		else:
+			_lbl_next_effect.add_theme_color_override("font_color", Color(0.7, 1.0, 0.7)) # Xanh lá bình thường
+			
+		_lbl_next_effect.text = effect_text
 		_btn_forge.disabled = false
 		
 	# Inventory

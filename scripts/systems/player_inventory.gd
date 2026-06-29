@@ -108,8 +108,8 @@ func sell_all_fish() -> int:
 		total_gold += fish.get("gold_value", 10)
 		
 	var haggle_lv = GameManager.player_data.get("character_stats", {}).get("haggling_lv", 0)
-	if haggle_lv > 0:
-		total_gold = int(total_gold * (1.0 + haggle_lv * 0.05))
+	var mult = 1.0 + (haggle_lv * 0.05) + get_rod_gold_multiplier()
+	total_gold = int(total_gold * mult)
 	
 	if total_gold > 0:
 		GameManager.add_currency("gold", total_gold)
@@ -129,14 +129,42 @@ func sell_fish_by_id(fish_id: String) -> int:
 		i -= 1
 		
 	var haggle_lv = GameManager.player_data.get("character_stats", {}).get("haggling_lv", 0)
-	if haggle_lv > 0 and total_gold > 0:
-		total_gold = int(total_gold * (1.0 + haggle_lv * 0.05))
+	var mult = 1.0 + (haggle_lv * 0.05) + get_rod_gold_multiplier()
+	total_gold = int(total_gold * mult)
 		
 	if total_gold > 0:
 		GameManager.add_currency("gold", total_gold)
 		EventBus.inventory_updated.emit()
 		
 	return total_gold
+
+func get_rod_gold_multiplier() -> float:
+	var rod = get_equipped_rod()
+	var base_mult = 0.0
+	if rod:
+		if rod.id == "rod_silver": base_mult = 0.05
+		elif rod.id == "rod_gold": base_mult = 0.10
+		elif rod.id == "rod_leviathan": base_mult = 0.25
+		
+	var lv = current_rod_stats.get("level", 0)
+	var lv_mult = floor(lv / 3) * 0.10 # +10% every 3 levels
+	
+	return base_mult + lv_mult
+
+
+
+func get_rod_luck() -> int:
+	var rod = get_equipped_rod()
+	var base_luck = 0
+	if rod:
+		if rod.id == "rod_silver": base_luck = 0
+		elif rod.id == "rod_gold": base_luck = 1
+		elif rod.id == "rod_leviathan": base_luck = 3
+		
+	var lv = current_rod_stats.get("level", 0)
+	var lv_luck = floor(lv / 3) # +1 every 3 levels
+	
+	return base_luck + lv_luck
 
 
 func get_fish_count_by_rank(rank: String) -> int:

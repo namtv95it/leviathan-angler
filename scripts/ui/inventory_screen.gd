@@ -154,10 +154,41 @@ func _populate_data() -> void:
 			rname = "Cần Leviathan"
 			icon = "🔱"
 			
-		var status = "Sở hữu"
-		if GameManager.player_data.get("equipped_rod", "") == rod_id:
-			status = "Đang dùng"
-		_inv_grid.add_child(_create_inv_card(icon, rname, status))
+		var is_equipped = GameManager.player_data.get("equipped_rod", "") == rod_id
+		var status = "Đang dùng" if is_equipped else "Sở hữu"
+		
+		# Tính toán chỉ số Buff
+		var base_gold_mult = 0.0
+		var base_speed_reduct = 0.0
+		if rod_id == "rod_silver":
+			base_gold_mult = 0.05
+			base_speed_reduct = 0.05
+		elif rod_id == "rod_gold":
+			base_gold_mult = 0.10
+			base_speed_reduct = 0.10
+		elif rod_id == "rod_leviathan":
+			base_gold_mult = 0.25
+			base_speed_reduct = 0.20
+			
+		var final_gold_mult = base_gold_mult
+		var final_speed_reduct = base_speed_reduct
+		
+		# Cộng thêm buff từ level nếu đang trang bị
+		if is_equipped:
+			var lv = PlayerInventory.current_rod_stats.get("level", 0)
+			final_gold_mult += floor(lv / 3) * 0.10
+			final_speed_reduct += (lv * 0.02)
+			status += " (+%d)" % lv
+			
+		var info_text = ""
+		if final_speed_reduct > 0:
+			info_text += "-%d%% Tốc độ cá\n" % int(final_speed_reduct * 100)
+		if final_gold_mult > 0:
+			info_text += "+%d%% Vàng bán cá" % int(final_gold_mult * 100)
+		if info_text == "":
+			info_text = "Không có hiệu ứng phụ"
+			
+		_inv_grid.add_child(_create_inv_card(icon, rname, status, info_text))
 	
 	# 4. Vẽ lưới cá
 	# Gộp các cá giống ID lại để đếm số lượng
@@ -219,7 +250,7 @@ func _populate_data() -> void:
 			
 			_fish_grid.add_child(card)
 
-func _create_inv_card(icon: String, name: String, info: String) -> PanelContainer:
+func _create_inv_card(icon: String, name: String, status: String, extra_info: String = "") -> PanelContainer:
 	var card = PanelContainer.new()
 	var style_card = StyleBoxFlat.new()
 	style_card.bg_color = Color(1, 1, 1, 0.1)
@@ -246,11 +277,22 @@ func _create_inv_card(icon: String, name: String, info: String) -> PanelContaine
 	cvbox.add_child(name_lbl)
 	
 	var info_lbl = Label.new()
-	info_lbl.text = info
+	info_lbl.text = status
 	info_lbl.add_theme_font_size_override("font_size", 18)
-	info_lbl.add_theme_color_override("font_color", Color.YELLOW)
+	if "Đang dùng" in status:
+		info_lbl.add_theme_color_override("font_color", Color.GREEN)
+	else:
+		info_lbl.add_theme_color_override("font_color", Color.GRAY)
 	info_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	cvbox.add_child(info_lbl)
+	
+	if extra_info != "":
+		var extra_lbl = Label.new()
+		extra_lbl.text = extra_info
+		extra_lbl.add_theme_font_size_override("font_size", 16)
+		extra_lbl.add_theme_color_override("font_color", Color.YELLOW)
+		extra_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		cvbox.add_child(extra_lbl)
 	
 	return card
 

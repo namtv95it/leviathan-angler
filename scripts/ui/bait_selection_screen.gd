@@ -56,10 +56,25 @@ func _ready() -> void:
 	var equip_glow_btn = glow_row.get_node("EquipBtn")
 	equip_glow_btn.pressed.connect(func(): _on_equip_pressed("bait_glow"))
 	
+	_add_bait_info($Root/Panel/VBoxContainer/BaitFree, "Thu hút cá Hạng C")
+	_add_bait_info($Root/Panel/VBoxContainer/BaitC, "Thu hút cá Hạng C, B")
+	_add_bait_info($Root/Panel/VBoxContainer/BaitLive, "Thu hút cá Hạng A, S, SS")
+	_add_bait_info(glow_row, "Thu hút cá Hạng S, SS")
+	
 	EventBus.inventory_updated.connect(_refresh_ui)
 	EventBus.currency_changed.connect(func(_a, _b): _refresh_ui())
 	
 	_refresh_ui()
+
+func _add_bait_info(row_node: Control, info_text: String) -> void:
+	var lbl = Label.new()
+	lbl.text = info_text
+	lbl.add_theme_font_size_override("font_size", 18)
+	lbl.add_theme_color_override("font_color", Color.YELLOW)
+	row_node.add_child(lbl)
+	# Đẩy label này lên trên các nút Equip/Buy bằng cách dời lên vị trí thứ 2 hoặc 3
+	row_node.move_child(lbl, 2)
+
 
 
 func _refresh_ui() -> void:

@@ -47,8 +47,8 @@ extends Resource
 # =============================================
 
 ## Tính cân nặng cuối từ % fill của Phase 4 (0.0 → 1.0)
-func calculate_weight(mash_fill: float) -> float:
-	return lerp(weight_min, weight_max, clampf(mash_fill, 0.0, 1.0))
+func calculate_weight(_mash_fill: float) -> float:
+	return randf_range(weight_min, weight_max)
 
 ## Tính Gold nhận được theo cân nặng & hệ số chất lượng từ timing zone
 ## quality_multiplier: Green=1.0 / Yellow=1.5 / Red=2.0
