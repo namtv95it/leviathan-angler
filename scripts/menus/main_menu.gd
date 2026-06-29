@@ -32,53 +32,38 @@ func _process(delta: float) -> void:
 # XÂY DỰNG UI
 # =============================================
 func _build_ui() -> void:
-	## --- Nền ocean gradient ---
-	var bg := ColorRect.new()
-	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
-	bg.color = Color(0.02, 0.06, 0.18)
-	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(bg)
-
-	## Lớp gradient dưới (sâu hơn)
-	var bg_deep := ColorRect.new()
-	bg_deep.set_anchors_preset(Control.PRESET_FULL_RECT)
-	bg_deep.anchor_top = 0.6
-	bg_deep.color    = Color(0.01, 0.03, 0.12)
-	bg_deep.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(bg_deep)
-
-	## Các dải sáng mô phỏng ánh sáng xuyên nước
-	for i in range(6):
-		var shimmer := ColorRect.new()
-		shimmer.set_anchors_preset(Control.PRESET_TOP_WIDE)
-		shimmer.offset_top = i * SCREEN_H / 6.0
-		shimmer.offset_bottom = i * SCREEN_H / 6.0 + SCREEN_H / 10.0
-		var alpha := 0.04 + (1.0 - float(i) / 6.0) * 0.06
-		shimmer.color = Color(0.1, 0.3, 0.7, alpha)
-		shimmer.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		add_child(shimmer)
-
-	## Bóng cá trang trí (nền)
+	## Sử dụng chung background động sáng sủa với gameplay
+	var dynamic_bg = preload("res://scripts/gameplay/background_visual.gd").new()
+	add_child(dynamic_bg)
+	
+	## Bóng cá trang trí (nền) bơi qua lại (dùng Polygon thay vì hình chữ nhật cứng nhắc)
 	for i in range(5):
-		var shadow := ColorRect.new()
-		var w: float = randf_range(70, 200)
-		var h: float = randf_range(22, 60)
-		shadow.size     = Vector2(w, h)
+		var shadow := Polygon2D.new()
+		var w: float = randf_range(50, 150)
+		var h: float = w * 0.35
+		
+		var pts = PackedVector2Array()
+		# Tạo hình thân cá
+		for j in range(17):
+			var t = float(j) / 16.0 * TAU
+			var px = cos(t) * w
+			var py = sin(t) * h
+			if px < 0:
+				py *= (1.0 + (px / w) * 0.5)
+			pts.append(Vector2(px, py))
+			
+		# Tạo hình đuôi cá
+		pts.append(Vector2(-w, 0))
+		pts.append(Vector2(-w - w*0.4, -h*1.2))
+		pts.append(Vector2(-w - w*0.2, 0))
+		pts.append(Vector2(-w - w*0.4, h*1.2))
+		
+		shadow.polygon = pts
 		shadow.position = Vector2(-250.0, 300.0 + i * 150.0 + randf_range(-40, 40))
-		shadow.color    = Color(0.0, 0.05, 0.18, 0.35)
-		shadow.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		shadow.name     = "Decor%d" % i
+		shadow.color = Color(0.05, 0.15, 0.3, 0.15) # Bóng cá mờ dưới nước sáng
+		shadow.name = "Decor%d" % i
 		add_child(shadow)
 		_fish_decors.append(shadow)
-
-	## Đường phân cách nước (mặt biển)
-	var water_line := ColorRect.new()
-	water_line.set_anchors_preset(Control.PRESET_TOP_WIDE)
-	water_line.offset_top = 600
-	water_line.offset_bottom = 602
-	water_line.color    = Color(0.4, 0.7, 1.0, 0.25)
-	water_line.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(water_line)
 
 	## --- TIÊU ĐỀ GAME ---
 	## Halo glow (label sau, to hơn + trong suốt)
@@ -113,7 +98,9 @@ func _build_ui() -> void:
 	subtitle.offset_top = 260
 	subtitle.offset_bottom = 330
 	subtitle.add_theme_font_size_override("font_size", 48)
-	subtitle.add_theme_color_override("font_color", Color(0.45, 0.78, 1.0))
+	subtitle.add_theme_color_override("font_color", Color(1.0, 1.0, 1.0))
+	subtitle.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.5))
+	subtitle.add_theme_constant_override("outline_size", 8)
 	subtitle.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(subtitle)
 
@@ -135,8 +122,10 @@ func _build_ui() -> void:
 	stats.set_anchors_preset(Control.PRESET_TOP_WIDE)
 	stats.offset_top = 390
 	stats.offset_bottom = 450
-	stats.add_theme_font_size_override("font_size", 40)
-	stats.add_theme_color_override("font_color", Color(0.65, 0.82, 1.0))
+	stats.add_theme_font_size_override("font_size", 42)
+	stats.add_theme_color_override("font_color", Color(1.0, 1.0, 1.0))
+	stats.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.6))
+	stats.add_theme_constant_override("outline_size", 6)
 	stats.name = "StatsLabel"
 	stats.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(stats)
@@ -149,23 +138,41 @@ func _build_ui() -> void:
 	fish_count.offset_top = 450
 	fish_count.offset_bottom = 500
 	fish_count.add_theme_font_size_override("font_size", 34)
-	fish_count.add_theme_color_override("font_color", Color(0.5, 0.7, 1.0))
+	fish_count.add_theme_color_override("font_color", Color(1.0, 1.0, 1.0))
+	fish_count.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.6))
+	fish_count.add_theme_constant_override("outline_size", 6)
 	fish_count.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(fish_count)
 
 	## --- NÚT CHÍNH ---
+	var style_btn = StyleBoxFlat.new()
+	style_btn.bg_color = Color(0.2, 0.45, 0.8)
+	style_btn.corner_radius_top_left = 20
+	style_btn.corner_radius_top_right = 20
+	style_btn.corner_radius_bottom_left = 20
+	style_btn.corner_radius_bottom_right = 20
+	style_btn.border_width_bottom = 8
+	style_btn.border_color = Color(0.1, 0.25, 0.5)
+
+	var style_btn_hover = style_btn.duplicate()
+	style_btn_hover.bg_color = Color(0.3, 0.6, 1.0)
+	
 	_play_btn = Button.new()
 	_play_btn.text = "▶  CHƠI NGAY"
 	_play_btn.set_anchors_preset(Control.PRESET_CENTER_TOP)
 	_play_btn.offset_left = -360
 	_play_btn.offset_right = 360
 	_play_btn.offset_top = 600
-	_play_btn.offset_bottom = 770
-	_play_btn.add_theme_font_size_override("font_size", 80)
-	_play_btn.pivot_offset = Vector2(360, 85)
+	_play_btn.offset_bottom = 750
+	_play_btn.add_theme_stylebox_override("normal", style_btn)
+	_play_btn.add_theme_stylebox_override("hover", style_btn_hover)
+	_play_btn.add_theme_stylebox_override("pressed", style_btn)
+	_play_btn.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
+	_play_btn.add_theme_font_size_override("font_size", 64)
+	_play_btn.pivot_offset = Vector2(360, 75)
 	_play_btn.name = "PlayBtn"
 	_play_btn.pressed.connect(_on_play_pressed)
-	_play_btn.mouse_entered.connect(func(): _scale_btn(_play_btn, 1.06))
+	_play_btn.mouse_entered.connect(func(): _scale_btn(_play_btn, 1.04))
 	_play_btn.mouse_exited.connect(func():  _scale_btn(_play_btn, 1.0))
 	add_child(_play_btn)
 
@@ -180,9 +187,16 @@ func _build_ui() -> void:
 	row.add_theme_constant_override("separation", 24)
 	add_child(row)
 
+	var style_sub_btn = style_btn.duplicate()
+	style_sub_btn.bg_color = Color(0.15, 0.35, 0.6)
+	style_sub_btn.border_color = Color(0.1, 0.2, 0.4)
+	style_sub_btn.border_width_bottom = 6
+	
 	var btn_inv := Button.new()
 	btn_inv.text = "🎒 Túi đồ"
 	btn_inv.custom_minimum_size = Vector2(370, 95)
+	btn_inv.add_theme_stylebox_override("normal", style_sub_btn)
+	btn_inv.add_theme_stylebox_override("disabled", style_sub_btn)
 	btn_inv.add_theme_font_size_override("font_size", 38)
 	btn_inv.disabled = true   ## Sprint 3
 	row.add_child(btn_inv)
@@ -190,6 +204,8 @@ func _build_ui() -> void:
 	var btn_shop := Button.new()
 	btn_shop.text = "🏪 Cửa hàng"
 	btn_shop.custom_minimum_size = Vector2(370, 95)
+	btn_shop.add_theme_stylebox_override("normal", style_sub_btn)
+	btn_shop.add_theme_stylebox_override("disabled", style_sub_btn)
 	btn_shop.add_theme_font_size_override("font_size", 38)
 	btn_shop.disabled = true  ## Sprint 3
 	row.add_child(btn_shop)
