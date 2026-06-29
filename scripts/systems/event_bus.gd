@@ -38,4 +38,5 @@ signal inventory_updated()
 
 # === UI SIGNALS ===
 signal scene_transition_requested(scene_path: String)
+signal open_fish_library()
 signal notification_requested(message: String, type: String)  ## type: "info"|"success"|"warning"

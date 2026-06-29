@@ -20,6 +20,9 @@ extends Node
 ## Lịch sử cá đã câu (dùng cho Collection/Aquarium sau này)
 var fish_inventory: Array[Dictionary] = []
 
+## Bộ sưu tập các loại cá đã câu: fish_id -> {"max_weight": float, "caught_count": int}
+var fish_collection: Dictionary = {}
+
 ## Kho mồi: bait_id → số lượng (-1 = vô hạn)
 var bait_stock: Dictionary = {
 	"bait_free":    -1,   ## Mồi cơ bản: vô hạn
@@ -85,6 +88,16 @@ func add_fish(fish_data, weight: float) -> void:
 		entry["gold_value"] = int(fish_data.get("gold_value", 10))
 
 	fish_inventory.append(entry)
+	
+	# Cập nhật Thư Viện Cá (fish_collection)
+	var fid = entry["fish_id"]
+	if not fish_collection.has(fid):
+		fish_collection[fid] = {"max_weight": 0.0, "caught_count": 0}
+	
+	fish_collection[fid]["caught_count"] += 1
+	if weight > fish_collection[fid]["max_weight"]:
+		fish_collection[fid]["max_weight"] = weight
+		
 	EventBus.inventory_updated.emit()
 	print("[PlayerInventory] Thêm cá: %s %.2fkg" % [entry["fish_name"], weight])
 
@@ -272,6 +285,7 @@ func consume_material(mat_id: String, amount: int) -> bool:
 func to_dict() -> Dictionary:
 	return {
 		"fish_inventory": fish_inventory,
+		"fish_collection": fish_collection,
 		"bait_stock": bait_stock,
 		"owned_rod_ids": owned_rod_ids,
 		"current_rod_stats": current_rod_stats,
@@ -281,6 +295,8 @@ func to_dict() -> Dictionary:
 func load_from_dict(data: Dictionary) -> void:
 	if data.has("fish_inventory"):
 		fish_inventory.assign(data["fish_inventory"])
+	if data.has("fish_collection"):
+		fish_collection = data["fish_collection"]
 	if data.has("bait_stock"):
 		bait_stock = data["bait_stock"]
 	if data.has("owned_rod_ids"):

@@ -34,7 +34,8 @@ var _profile_name: Label
 var _gold_label:   Label
 var _gem_label:    Label
 var _btn_shop:     Button
-var _btn_inv: Button
+var _btn_inv:      Button
+var _btn_library:  Button
 var _btn_home:     Button
 
 # --- Debug Panel ---
@@ -173,9 +174,17 @@ func _build_ui() -> void:
 	_btn_inv.pressed.connect(func(): open_inventory.emit())
 	top_right.add_child(_btn_inv)
 
+	_btn_library = Button.new()
+	_btn_library.position = Vector2(-1170, 0)
+	_btn_library.size = Vector2(200, 50)
+	_btn_library.text = "📖 THƯ VIỆN"
+	_btn_library.add_theme_font_size_override("font_size", 28)
+	_btn_library.pressed.connect(func(): EventBus.open_fish_library.emit())
+	top_right.add_child(_btn_library)
+
 	# Nút quay về trang chủ
 	_btn_home = Button.new()
-	_btn_home.position = Vector2(-1130, 0)
+	_btn_home.position = Vector2(-1350, 0)
 	_btn_home.size = Vector2(160, 50)
 	_btn_home.text = "← Menu"
 	_btn_home.add_theme_font_size_override("font_size", 28)

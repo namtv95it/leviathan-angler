@@ -19,9 +19,8 @@ var _fish_db: Dictionary = {}
 
 
 func _ready() -> void:
+	_load_placeholder_fish()
 	_load_all_fish()
-	if _fish_db.is_empty():
-		_load_placeholder_fish()
 	print("[FishDatabase] Đã tải %d loài cá." % _fish_db.size())
 
 
@@ -29,7 +28,6 @@ func _load_all_fish() -> void:
 	var dir := DirAccess.open(FISH_DIR)
 	if dir == null:
 		push_warning("[FishDatabase] Chưa có thư mục: " + FISH_DIR)
-		_load_placeholder_fish()
 		return
 
 	dir.list_dir_begin()

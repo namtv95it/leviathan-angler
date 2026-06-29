@@ -107,6 +107,7 @@ func _ready() -> void:
 	_hud.open_inventory.connect(_on_open_inventory)
 	_hud.go_home.connect(_on_hud_go_home)
 	_hud.auto_fish_toggled.connect(_on_auto_fish_toggled)
+	EventBus.open_fish_library.connect(_on_open_fish_library)
 	
 	_set_state(Phase1State.IDLE)
 	print("[FishingController] Sẵn sàng.")
@@ -257,6 +258,12 @@ func _on_open_inventory() -> void:
 	var inv = preload("res://scenes/ui/inventory_screen.tscn").instantiate()
 	add_child(inv)
 	inv.inventory_closed.connect(func(): _hud.update_currency(GameManager.get_currency("gold"), GameManager.get_currency("pearl")))
+
+func _on_open_fish_library() -> void:
+	if _state not in [Phase1State.IDLE, Phase1State.WAITING]: return
+	AudioManager.play_sfx("ui_click")
+	var lib = load("res://scripts/ui/library_screen.gd").new()
+	add_child(lib)
 
 func _on_hud_go_home() -> void:
 	SaveManager.save_game()
